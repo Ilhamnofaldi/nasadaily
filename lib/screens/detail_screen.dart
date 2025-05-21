@@ -51,8 +51,8 @@ class _DetailScreenState extends State<DetailScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _shareApod(context),
-        child: const Icon(Icons.share),
         tooltip: 'Share',
+        child: const Icon(Icons.share),
       ),
     );
   }

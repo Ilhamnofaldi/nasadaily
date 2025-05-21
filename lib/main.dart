@@ -16,7 +16,7 @@ void main() async {
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
-  ]);Hey, Cortana. Hey, Cortana. Hey, Cortana. Hey, Cortana. My city neighbor. Hey, Cortana. Hey, Cortana. Hey, Cortana. Play my music. Hey, Cortana. 
+  ]);
   
   // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
