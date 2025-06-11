@@ -129,7 +129,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         ),
                       ),
                     ),
-                    child: ImageLoader(
+                    child: ImprovedImageLoader(
                       imageUrl: apod.displayUrl,
                       height: MediaQuery.of(context).size.height * 0.5,
                       fit: BoxFit.cover,

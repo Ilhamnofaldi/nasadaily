@@ -121,7 +121,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
               children: [
                 Hero(
                   tag: 'apod_image_${apod.date}',
-                  child: ImageLoader(
+                  child: ImprovedImageLoader(
                     imageUrl: apod.displayUrl,
                     height: 150,
                     width: double.infinity,

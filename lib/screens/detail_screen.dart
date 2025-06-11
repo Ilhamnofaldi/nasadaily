@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nasa_daily_snapshot/models/apod_model.dart';
 import 'package:nasa_daily_snapshot/providers/favorites_provider.dart';
-import 'package:nasa_daily_snapshot/widgets/image_loader.dart';
 import 'package:nasa_daily_snapshot/widgets/zoomable_image.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DetailScreen extends StatefulWidget {
@@ -50,7 +48,7 @@ class _DetailScreenState extends State<DetailScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _shareApod(context),
+        onPressed: () => (context),
         tooltip: 'Share',
         child: const Icon(Icons.share),
       ),
@@ -69,10 +67,6 @@ class _DetailScreenState extends State<DetailScreen> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                ImageLoader(
-                  imageUrl: widget.apod.displayUrl,
-                  fit: BoxFit.cover,
-                ),
                 if (widget.apod.mediaType == 'video')
                   Center(
                     child: IconButton(
@@ -271,12 +265,7 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
-  void _shareApod(BuildContext context) {
-    Share.share(
-      'Check out this amazing astronomy picture: ${widget.apod.title}\n${widget.apod.url}',
-      subject: 'NASA Astronomy Picture of the Day',
-    );
-  }
+
 }
 
 extension StringExtension on String {

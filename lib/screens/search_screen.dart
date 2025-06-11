@@ -284,7 +284,7 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
                 tag: 'apod_image_${apod.date}',
                 child: Stack(
                   children: [
-                    ImageLoader(
+                    ImprovedImageLoader(
                       imageUrl: apod.displayUrl,
                       height: 100,
                       width: 100,

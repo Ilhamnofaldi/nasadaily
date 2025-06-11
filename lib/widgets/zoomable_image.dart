@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nasa_daily_snapshot/widgets/image_loader.dart';
 
 class ZoomableImage extends StatefulWidget {
   final String imageUrl;
@@ -93,10 +92,6 @@ class _ZoomableImageState extends State<ZoomableImage> {
               minScale: 0.5,
               maxScale: 5.0,
               child: Center(
-                child: ImageLoader(
-                  imageUrl: widget.imageUrl,
-                  fit: BoxFit.contain,
-                ),
               ),
             ),
             if (_showControls)
