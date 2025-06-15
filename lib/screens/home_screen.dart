@@ -120,121 +120,273 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Stack(
-              children: [
-                Hero(
-                  tag: 'apod_image_${apod.date}',
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DetailScreen(
-                          apod: apod,
-                          favoritesProvider: widget.favoritesProvider,
-                          // heroTagPrefix is null here, DetailScreen will use default 'apod_image_'
-                        ),
-                      ),
-                    ),
-                    child: ImprovedImageLoader(
-                      imageUrl: apod.displayUrl,
-                      mediaType: apod.mediaType, // Added mediaType
-                      height: MediaQuery.of(context).size.height * 0.5,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+            // Hero Image Section with improved layout
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
                 ),
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: IconButton(
-                      icon: Icon(
-                        isFavorite ? Icons.favorite : Icons.favorite_outline,
-                        color: isFavorite ? Colors.red : Colors.white,
-                      ),
-                      onPressed: () {
-                        widget.favoritesProvider.toggleFavorite(apod);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              isFavorite 
-                                  ? 'Removed from favorites' 
-                                  : 'Added to favorites'
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.1)),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+                child: Stack(
+                  children: [
+                    Hero(
+                      tag: 'apod_image_${apod.date}',
+                      child: GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => DetailScreen(
+                              apod: apod,
+                              favoritesProvider: widget.favoritesProvider,
                             ),
-                            duration: const Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
                           ),
-                        );
-                      },
-                      tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
-                    ),
-                  ),
-                ),
-                if (apod.mediaType == 'video')
-                  Positioned.fill(
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
-                          shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.play_arrow,
-                          color: Colors.white,
-                          size: 48,
+                        child: ImprovedImageLoader(
+                          imageUrl: apod.displayUrl,
+                          mediaType: apod.mediaType,
+                          height: MediaQuery.of(context).size.height * 0.5,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                  ),
-              ],
+                    // Gradient overlay for better text readability
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Favorite button with improved design
+                    Positioned(
+                      top: 20,
+                      right: 20,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.2)),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: IconButton(
+                          icon: Icon(
+                            isFavorite ? Icons.favorite : Icons.favorite_outline,
+                            color: isFavorite ? Colors.red : Colors.grey[600],
+                            size: 24,
+                          ),
+                          onPressed: () {
+                            widget.favoritesProvider.toggleFavorite(apod);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  isFavorite 
+                                      ? 'Removed from favorites' 
+                                      : 'Added to favorites'
+                                ),
+                                duration: const Duration(seconds: 1),
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            );
+                          },
+                          tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
+                        ),
+                      ),
+                    ),
+                    // Video play button with improved design
+                    if (apod.mediaType == 'video')
+                      Positioned.fill(
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.play_arrow,
+                              color: Theme.of(context).primaryColor,
+                              size: 52,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
+            // Content section with improved spacing and typography
+            Container(
+              padding: const EdgeInsets.all(24.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Title with improved typography
                   Text(
                     apod.title,
-                    style: Theme.of(context).textTheme.headlineSmall,
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      height: 1.3,
+                      letterSpacing: -0.5,
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        DateFormat.yMMMMd().format(DateTime.parse(apod.date)),
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
+                  const SizedBox(height: 16),
+                  
+                  // Metadata section with improved layout
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
                       ),
-                    ],
-                  ),
-                  if (apod.copyright != null) ...[
-                    const SizedBox(height: 4),
-                    Row(
+                    ),
+                    child: Column(
                       children: [
-                        const Icon(Icons.copyright, size: 16),
-                        const SizedBox(width: 8),
-                        Text(
-                          apod.copyright!,
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.calendar_today,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Date',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    DateFormat.yMMMMd().format(DateTime.parse(apod.date)),
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
+                        if (apod.copyright != null) ...[
+                          const SizedBox(height: 12),
+                          const Divider(height: 1),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.copyright,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.secondary,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Copyright',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      apod.copyright!,
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
                     ),
-                  ],
-                  const SizedBox(height: 16),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // Description with improved typography
+                  Text(
+                    'Description',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   Text(
                     _getShortDescription(apod.explanation),
-                    style: Theme.of(context).textTheme.bodyLarge,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                      height: 1.6,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                  const SizedBox(height: 16),
-                  Center(
+                  
+                  const SizedBox(height: 32),
+                  
+                  // Action button with improved design
+                  SizedBox(
+                    width: double.infinity,
                     child: ElevatedButton.icon(
                       onPressed: () => Navigator.push(
                         context,
@@ -245,14 +397,23 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                           ),
                         ),
                       ),
-                      icon: const Icon(Icons.info_outline),
-                      label: const Text('View Details'),
+                      icon: const Icon(Icons.info_outline, size: 20),
+                      label: const Text('View Full Details'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 2,
+                        shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.3),
                       ),
                     ),
                   ),
+                  
+                  // Bottom spacing
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

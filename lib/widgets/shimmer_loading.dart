@@ -56,9 +56,18 @@ class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProvid
               begin: Alignment(_animation.value, 0),
               end: Alignment(_animation.value + 1, 0),
               colors: [
-                Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
-                Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.5)),
-                Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1A1B3A).withAlpha(ColorUtils.safeAlpha(0.3))
+                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.4))
+                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.5)),
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFA855F7).withAlpha(ColorUtils.safeAlpha(0.3))
+                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.4)),
+                Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFF1A1B3A).withAlpha(ColorUtils.safeAlpha(0.2))
+                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
               ],
             ),
           ),

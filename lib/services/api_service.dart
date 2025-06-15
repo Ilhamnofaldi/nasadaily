@@ -76,12 +76,21 @@ class ApiService {
       
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
-        final results = data.map((item) => ApodModel.fromJson(item)).toList();
+        final results = <ApodModel>[];
         
-        // Cache individual items
-        for (final apod in results) {
-          final cacheKey = '$_cacheKeyPrefix${apod.date}';
-          await _cacheData(cacheKey, apod.toJson());
+        // Parse items individually and skip invalid ones
+        for (final item in data) {
+          try {
+            final apod = ApodModel.fromJson(item);
+            results.add(apod);
+            
+            // Cache valid items
+            final cacheKey = '$_cacheKeyPrefix${apod.date}';
+            await _cacheData(cacheKey, apod.toJson());
+          } catch (e) {
+            if (kDebugMode) print('Skipping invalid APOD item: $e');
+            // Continue processing other items
+          }
         }
         
         return results;

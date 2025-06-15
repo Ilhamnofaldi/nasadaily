@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // Add this import for debugPrint
 
 class NetworkImageWithFallback extends StatelessWidget {
   final String imageUrl;

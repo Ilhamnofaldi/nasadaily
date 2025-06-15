@@ -102,7 +102,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
           color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.2)),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.outline.withAlpha(ColorUtils.safeAlpha(0.2)),
           ),
         ),
         child: Column(
@@ -113,7 +113,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
                 ? Icons.ondemand_video_rounded
                 : Icons.image_not_supported_outlined,
               size: (widget.height ?? 40) * 0.4, // Relative icon size
-              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(ColorUtils.safeAlpha(0.7)),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -123,7 +123,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
                   ? 'Video preview unavailable'
                   : 'No preview available',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(ColorUtils.safeAlpha(0.7)),
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 2,
@@ -139,12 +139,14 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
       height: widget.height,
       width: widget.width,
       color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
-      child: CachedNetworkImage(
-        key: _imageKey,
-        imageUrl: widget.imageUrl,
-        fit: widget.fit,
-        height: widget.height,
-        width: widget.width,
+      child: Stack(
+        children: [
+          CachedNetworkImage(
+            key: _imageKey,
+            imageUrl: widget.imageUrl,
+            fit: widget.fit,
+            height: widget.height,
+            width: widget.width,
         
         // 🔥 SOLUSI 6: Progressive loading dengan thumbnail
         progressIndicatorBuilder: (context, url, downloadProgress) {
@@ -174,7 +176,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
                   Text(
                     '${_formatBytes(downloadProgress.downloaded)} / ${_formatBytes(downloadProgress.totalSize!)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(ColorUtils.safeAlpha(0.6)),
                     ),
                   ),
               ],
@@ -193,7 +195,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
                 color: Theme.of(context).colorScheme.errorContainer.withAlpha(ColorUtils.safeAlpha(0.3)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.error.withAlpha(ColorUtils.safeAlpha(0.3)),
                 ),
               ),
               child: Column(
@@ -216,7 +218,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
                   Text(
                     'Tap to retry',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(ColorUtils.safeAlpha(0.6)),
                     ),
                   ),
                 ],
@@ -249,6 +251,25 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
           );
         },
       ),
+      // Add play button overlay for videos
+      if (widget.mediaType == 'video')
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.play_circle_filled,
+                color: Colors.white,
+                size: 64,
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
     );
   }
 }
@@ -350,7 +371,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
                   Text(
                     '${_formatBytes(loadingProgress.cumulativeBytesLoaded)} / ${_formatBytes(loadingProgress.expectedTotalBytes!)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(ColorUtils.safeAlpha(0.6)),
                     ),
                   ),
               ],
@@ -373,7 +394,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
                 color: Theme.of(context).colorScheme.errorContainer.withAlpha(ColorUtils.safeAlpha(0.3)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Theme.of(context).colorScheme.error.withOpacity(0.3),
+                  color: Theme.of(context).colorScheme.error.withAlpha(ColorUtils.safeAlpha(0.3)),
                 ),
               ),
               child: Column(
@@ -396,7 +417,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
                   Text(
                     'Tap to retry',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      color: Theme.of(context).colorScheme.onSurface.withAlpha(ColorUtils.safeAlpha(0.6)),
                     ),
                   ),
                 ],

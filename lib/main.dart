@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nasa_daily_snapshot/providers/theme_provider.dart';
-import 'package:nasa_daily_snapshot/providers/apod_provider.dart';
-import 'package:nasa_daily_snapshot/providers/favorites_provider.dart';
-import 'package:nasa_daily_snapshot/screens/home_screen.dart';
-import 'package:nasa_daily_snapshot/screens/favorites_screen.dart';
-import 'package:nasa_daily_snapshot/screens/settings_screen.dart';
-import 'package:nasa_daily_snapshot/screens/search_screen.dart';
-import 'package:nasa_daily_snapshot/utils/app_theme.dart';
-import 'package:nasa_daily_snapshot/utils/color_utils.dart';
-import 'package:provider/provider.dart'; // Import the provider package
+import 'package:provider/provider.dart';
+
+// Using barrel exports for clean imports
+import 'package:nasa_daily_snapshot/providers/index.dart';
+import 'package:nasa_daily_snapshot/screens/index.dart';
+import 'package:nasa_daily_snapshot/themes/index.dart';
+import 'package:nasa_daily_snapshot/utils/index.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -178,52 +175,188 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
           ),
         ],
       ),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          indicatorColor: Theme.of(context).colorScheme.primary.withAlpha(ColorUtils.safeAlpha(0.2)), // Replaced .withOpacity(0.2)
-          labelTextStyle: WidgetStateProperty.all(
-            TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          gradient: Theme.of(context).brightness == Brightness.dark
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF1A1B3A).withAlpha(ColorUtils.safeAlpha(0.95)),
+                    const Color(0xFF0F0F23).withAlpha(ColorUtils.safeAlpha(0.98)),
+                  ],
+                )
+              : null,
+          boxShadow: Theme.of(context).brightness == Brightness.dark
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.1)),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ]
+              : null,
         ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: (index) {
-            setState(() {
-              _selectedIndex = index;
-            });
-            
-            if (index == 0) {
-              _animationController.forward(from: 0.0);
-            }
-          },
-          animationDuration: const Duration(milliseconds: 500),
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          destinations: const [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.search_outlined),
-              selectedIcon: Icon(Icons.search),
-              label: 'Search',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.favorite_outline),
-              selectedIcon: Icon(Icons.favorite),
-              label: 'Favorites',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.settings_outlined),
-              selectedIcon: Icon(Icons.settings),
-              label: 'Settings',
-            ),
-          ],
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            backgroundColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.transparent
+                : null,
+            indicatorColor: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.3))
+                : Theme.of(context).colorScheme.primary.withAlpha(ColorUtils.safeAlpha(0.2)),
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF6366F1)
+                      : Theme.of(context).colorScheme.primary,
+                  letterSpacing: 0.5,
+                );
+              }
+              return TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFE2E8F0).withAlpha(ColorUtils.safeAlpha(0.7))
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(ColorUtils.safeAlpha(0.7)),
+              );
+            }),
+            iconTheme: WidgetStateProperty.resolveWith((states) {
+              if (states.contains(WidgetState.selected)) {
+                return IconThemeData(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFF6366F1)
+                      : Theme.of(context).colorScheme.primary,
+                  size: 26,
+                );
+              }
+              return IconThemeData(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? const Color(0xFFE2E8F0).withAlpha(ColorUtils.safeAlpha(0.7))
+                    : Theme.of(context).colorScheme.onSurface.withAlpha(ColorUtils.safeAlpha(0.7)),
+                size: 24,
+              );
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: (index) {
+              setState(() {
+                _selectedIndex = index;
+              });
+              
+              if (index == 0) {
+                _animationController.forward(from: 0.0);
+              }
+            },
+            animationDuration: const Duration(milliseconds: 600),
+            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+            destinations: [
+              NavigationDestination(
+                icon: Icon(
+                  Icons.home_outlined,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.3)),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                selectedIcon: Icon(
+                  Icons.home,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.5)),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
+                ),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(
+                  Icons.search_outlined,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.3)),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                selectedIcon: Icon(
+                  Icons.search,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.5)),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
+                ),
+                label: 'Search',
+              ),
+              NavigationDestination(
+                icon: Icon(
+                  Icons.favorite_outline,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.3)),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                selectedIcon: Icon(
+                  Icons.favorite,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.5)),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
+                ),
+                label: 'Favorites',
+              ),
+              NavigationDestination(
+                icon: Icon(
+                  Icons.settings_outlined,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.3)),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
+                ),
+                selectedIcon: Icon(
+                  Icons.settings,
+                  shadows: Theme.of(context).brightness == Brightness.dark
+                      ? [
+                          Shadow(
+                            color: const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.5)),
+                            blurRadius: 12,
+                          ),
+                        ]
+                      : null,
+                ),
+                label: 'Settings',
+              ),
+            ],
+          ),
         ),
       ),
     );

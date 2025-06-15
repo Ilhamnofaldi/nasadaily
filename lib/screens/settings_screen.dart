@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nasa_daily_snapshot/providers/theme_provider.dart';
+import 'package:nasa_daily_snapshot/utils/color_utils.dart';
+import 'package:nasa_daily_snapshot/utils/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -285,11 +287,5 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
         ),
       ],
     );
-  }
-}
-
-extension StringExtension on String {
-  String capitalize() {
-    return "${this[0].toUpperCase()}${substring(1)}";
   }
 }

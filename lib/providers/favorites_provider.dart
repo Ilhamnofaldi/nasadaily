@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nasa_daily_snapshot/models/apod_model.dart';
+import '../models/apod_model.dart';
 
 class FavoritesProvider extends ChangeNotifier {
   SharedPreferences? _prefs;
@@ -51,5 +51,15 @@ class FavoritesProvider extends ChangeNotifier {
     _favorites.removeWhere((item) => item.date == date);
     _saveFavorites();
     notifyListeners();
+  }
+
+  void addFavorite(ApodModel apod) {
+    if (!isFavorite(apod.date)) {
+      _favorites.add(apod);
+      // Sort by date, newest first
+      _favorites.sort((a, b) => b.date.compareTo(a.date));
+      _saveFavorites();
+      notifyListeners();
+    }
   }
 }
