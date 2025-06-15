@@ -98,7 +98,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          Formatters.formatDate(widget.apod.date),
+                          Formatters.formatDisplayDate(widget.apod.date),
                           style: TextStyle(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.w600,
@@ -119,9 +119,8 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  
-                  // Copyright info
-                  if (widget.apod.copyright != null) ..[
+                                  // Copyright info
+                  if (widget.apod.copyright != null) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
@@ -295,7 +294,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       ],
                     ),
                     child: ClipRRect(
-dd                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(16),
                       child: EnhancedImageLoader(
                         imageUrl: widget.apod.displayUrl,
                         mediaType: widget.apod.mediaType,
