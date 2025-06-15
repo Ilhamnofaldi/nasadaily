@@ -17,7 +17,7 @@ class ApiService {
   
   Future<ApodModel> getApod({String? date}) async {
     // 🔥 SOLUSI 2: Implementasi caching
-    final cacheKey = '${_cacheKeyPrefix}${date ?? 'today'}';
+    final cacheKey = '$_cacheKeyPrefix${date ?? 'today'}';
     final cachedData = await _getCachedData(cacheKey);
     
     if (cachedData != null) {
@@ -61,34 +61,12 @@ class ApiService {
     }
   }
   
-  // 🔥 SOLUSI 5: Search yang lebih efisien - cari di cache lokal dulu
-  Future<List<ApodModel>> searchApod({required String query}) async {
-    try {
-      // Coba cari di cache terlebih dahulu
-      final cachedResults = await _searchInCache(query);
-      if (cachedResults.isNotEmpty) {
-        return cachedResults;
-      }
-      
-      // Jika tidak ada di cache, ambil data minimal (7 hari terakhir)
-      final endDate = DateTime.now();
-      final startDate = endDate.subtract(const Duration(days: 7)); // Kurangi dari 50 ke 7 hari
-      
-      final formattedEndDate = _formatDate(endDate);
-      final formattedStartDate = _formatDate(startDate);
-      
-      final apods = await getApodRange(startDate: formattedStartDate, endDate: formattedEndDate);
-      
-      // Filter results
-      final lowercaseQuery = query.toLowerCase();
-      return apods.where((apod) {
-        return apod.title.toLowerCase().contains(lowercaseQuery) || 
-               apod.explanation.toLowerCase().contains(lowercaseQuery);
-      }).toList();
-    } catch (e) {
-      throw Exception('Error searching APOD: $e');
-    }
-  }
+  // The searchApod method is no longer needed here as the ApodProvider
+  // will now call getApodRange directly with specific date ranges for pagination
+  // and then filter the results itself.
+  // Keeping _searchInCache for potential future use if local-only search is desired.
+
+  // Future<List<ApodModel>> searchApod({required String query}) async { ... }
   
   Future<List<ApodModel>> getApodRange({required String startDate, required String endDate}) async {
     final url = Uri.parse('$_baseUrl?api_key=$_apiKey&start_date=$startDate&end_date=$endDate');
@@ -102,7 +80,7 @@ class ApiService {
         
         // Cache individual items
         for (final apod in results) {
-          final cacheKey = '${_cacheKeyPrefix}${apod.date}';
+          final cacheKey = '$_cacheKeyPrefix${apod.date}';
           await _cacheData(cacheKey, apod.toJson());
         }
         

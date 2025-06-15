@@ -7,6 +7,7 @@ import 'package:nasa_daily_snapshot/screens/detail_screen.dart';
 import 'package:nasa_daily_snapshot/widgets/image_loader.dart';
 import 'package:nasa_daily_snapshot/widgets/error_view.dart';
 import 'package:nasa_daily_snapshot/widgets/shimmer_loading.dart';
+import 'package:nasa_daily_snapshot/utils/color_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   final ApodProvider apodProvider;
@@ -30,7 +31,11 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   void initState() {
     super.initState();
     // Fetch today's APOD when the screen initializes
-    _fetchApod();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _fetchApod();
+      }
+    });
   }
 
   Future<void> _fetchApod() async {
@@ -126,11 +131,13 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         builder: (context) => DetailScreen(
                           apod: apod,
                           favoritesProvider: widget.favoritesProvider,
+                          // heroTagPrefix is null here, DetailScreen will use default 'apod_image_'
                         ),
                       ),
                     ),
                     child: ImprovedImageLoader(
                       imageUrl: apod.displayUrl,
+                      mediaType: apod.mediaType, // Added mediaType
                       height: MediaQuery.of(context).size.height * 0.5,
                       fit: BoxFit.cover,
                     ),
@@ -141,7 +148,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                   right: 16,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: IconButton(
@@ -173,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                       child: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(

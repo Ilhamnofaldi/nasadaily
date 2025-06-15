@@ -7,8 +7,14 @@ class ApodProvider extends ChangeNotifier {
   
   ApodModel? _apod;
   List<ApodModel> _searchResults = [];
-  bool _isLoading = false;
-  bool _isSearching = false;
+  String _currentSearchQuery = '';
+  DateTime _searchEndDate = DateTime.now();
+  final int _searchPageSizeInDays = 30; // Fetch 30 days at a time for search
+  bool _hasMoreSearchResults = true;
+
+  bool _isLoading = false; // For initial APOD fetch
+  bool _isSearching = false; // For the initial search action
+  bool _isLoadingMoreSearchResults = false; // For loading more search results
   String? _error;
   
   // 🔥 SOLUSI 11: Tambahan untuk debugging
@@ -19,6 +25,8 @@ class ApodProvider extends ChangeNotifier {
   List<ApodModel> get searchResults => _searchResults;
   bool get isLoading => _isLoading;
   bool get isSearching => _isSearching;
+  bool get isLoadingMoreSearchResults => _isLoadingMoreSearchResults;
+  bool get hasMoreSearchResults => _hasMoreSearchResults;
   String? get error => _error;
   bool get isRetrying => _isRetrying;
 
@@ -80,40 +88,95 @@ class ApodProvider extends ChangeNotifier {
   
   Future<void> searchApods(String query) async {
     if (query.isEmpty) {
-      _searchResults = [];
-      notifyListeners();
+      clearSearch();
       return;
     }
-    
-    if (_isSearching) return; // Prevent multiple searches
-    
+
     _isSearching = true;
+    _currentSearchQuery = query;
+    _searchResults = [];
+    _searchEndDate = DateTime.now(); // Start searching from today backwards
+    _hasMoreSearchResults = true;
     _error = null;
-    
-    if (kDebugMode) print('🔍 Searching for: $query');
+    notifyListeners();
+
+    if (kDebugMode) print('🔍 Initializing search for: $query');
+    await loadMoreSearchResults(isInitialSearch: true);
+
+    _isSearching = false;
+    notifyListeners();
+  }
+
+  Future<void> loadMoreSearchResults({bool isInitialSearch = false}) async {
+    if (_isLoadingMoreSearchResults && !isInitialSearch) return;
+    if (!_hasMoreSearchResults && !isInitialSearch) return;
+
+    if (isInitialSearch) {
+      _isSearching = true;
+    } else {
+      _isLoadingMoreSearchResults = true;
+    }
+    _error = null;
     notifyListeners();
 
     try {
-      final results = await _apiService.searchApod(query: query);
-      _searchResults = results;
-      _error = null;
+      final DateTime fetchEndDate = _searchEndDate;
+      final DateTime fetchStartDate = _searchEndDate.subtract(Duration(days: _searchPageSizeInDays -1)); // -1 because range is inclusive
       
-      if (kDebugMode) print('✅ Search completed: ${results.length} results found');
+      if (kDebugMode) {
+        print('➡️ Fetching search chunk: Query: "$_currentSearchQuery", Start: ${_formatDate(fetchStartDate)}, End: ${_formatDate(fetchEndDate)}');
+      }
+
+      final List<ApodModel> fetchedApods = await _apiService.getApodRange(
+        startDate: _formatDate(fetchStartDate),
+        endDate: _formatDate(fetchEndDate),
+      );
+      if (kDebugMode) debugPrint('ApodProvider: Fetched ${fetchedApods.length} APODs before filtering.');
+
+      final lowercaseQuery = _currentSearchQuery.toLowerCase();
+      if (kDebugMode) debugPrint('ApodProvider: Lowercase query: "$lowercaseQuery"');
       
+      final List<ApodModel> filteredResults = fetchedApods.where((apod) {
+        return apod.title.toLowerCase().contains(lowercaseQuery) || 
+               apod.explanation.toLowerCase().contains(lowercaseQuery);
+      }).toList();
+      if (kDebugMode) debugPrint('ApodProvider: Filtered to ${filteredResults.length} APODs.');
+
+      _searchResults.addAll(filteredResults);
+      _searchEndDate = fetchStartDate.subtract(const Duration(days: 1)); // Move to the day before the start of the current chunk
+
+      if (fetchedApods.length < _searchPageSizeInDays || fetchedApods.isEmpty) {
+        // Heuristic: if we fetched less than requested, or nothing, assume no more data for this broad period
+        _hasMoreSearchResults = false;
+        if (kDebugMode) print('🏁 No more search results presumed.');
+      }
+      if (kDebugMode) {
+        print('✅ Search chunk processed: ${filteredResults.length} new items added. Total: ${_searchResults.length}');
+        debugPrint('ApodProvider: _hasMoreSearchResults: $_hasMoreSearchResults');
+        debugPrint('ApodProvider: _searchResults.length: ${_searchResults.length}');
+      }
+
     } catch (e) {
       _error = _getFormattedError(e.toString());
-      _searchResults = [];
-      
-      if (kDebugMode) print('❌ Search error: $e');
-      
+      if (kDebugMode) print('❌ Error loading more search results: $e');
+      // Optionally set _hasMoreSearchResults = false on error, or allow retry
     } finally {
-      _isSearching = false;
+      if (isInitialSearch) {
+        _isSearching = false;
+      } else {
+        _isLoadingMoreSearchResults = false;
+      }
       notifyListeners();
     }
   }
   
   void clearSearch() {
     _searchResults = [];
+    _currentSearchQuery = '';
+    _searchEndDate = DateTime.now();
+    _hasMoreSearchResults = true;
+    _isLoadingMoreSearchResults = false;
+    _isSearching = false;
     _error = null;
     notifyListeners();
   }
@@ -147,5 +210,10 @@ class ApodProvider extends ChangeNotifier {
     _error = null;
     
     await fetchApod(date: date);
+  }
+
+  // Helper to format date for API
+  String _formatDate(DateTime date) {
+    return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   }
 }

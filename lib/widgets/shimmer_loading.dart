@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/color_utils.dart';
 
 class ShimmerLoading extends StatefulWidget {
   final double height;
@@ -39,6 +40,8 @@ class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProvid
     super.dispose();
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -53,9 +56,9 @@ class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProvid
               begin: Alignment(_animation.value, 0),
               end: Alignment(_animation.value + 1, 0),
               colors: [
-                Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
+                Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.5)),
+                Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
               ],
             ),
           ),

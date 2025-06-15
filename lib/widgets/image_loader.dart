@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart'; 
+import 'package:cached_network_image/cached_network_image.dart';
+import '../utils/color_utils.dart'; 
 
 // Helper untuk format ukuran file - DIEKSTRAK KE TOP LEVEL
 String _formatBytes(int bytes) {
@@ -8,15 +9,30 @@ String _formatBytes(int bytes) {
   return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
 }
 
+int _safePercentage(double value) {
+  if (value.isNaN || value.isInfinite) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return value.toInt();
+}
+
+int? _safeToInt(double? value) {
+  if (value == null) return null;
+  if (value.isNaN || value.isInfinite) return null;
+  return value.toInt();
+}
+
 class ImprovedImageLoader extends StatefulWidget {
   final String imageUrl;
   final double? height;
   final double? width;
   final BoxFit fit;
+  final String mediaType; // Added mediaType
 
   const ImprovedImageLoader({
     Key? key,
     required this.imageUrl,
+    required this.mediaType, // Added mediaType
     this.height,
     this.width,
     this.fit = BoxFit.cover,
@@ -59,12 +75,70 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
     super.dispose();
   }
 
+  bool _isValidImageUrl(String url) {
+    if (url.isEmpty) return false;
+    final uri = Uri.tryParse(url);
+    if (uri == null) return false;
+    // Allow data URIs, common image schemes, and common image extensions
+    if (uri.scheme == 'data') return true;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return false; 
+
+    final path = uri.path.toLowerCase();
+    return path.endsWith('.jpeg') ||
+           path.endsWith('.jpg') ||
+           path.endsWith('.png') ||
+           path.endsWith('.gif') ||
+           path.endsWith('.webp') ||
+           path.endsWith('.bmp');
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.imageUrl.isEmpty || !_isValidImageUrl(widget.imageUrl)) {
+      return Container(
+        height: widget.height,
+        width: widget.width,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.2)),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              widget.mediaType == 'video'
+                ? Icons.ondemand_video_rounded
+                : Icons.image_not_supported_outlined,
+              size: (widget.height ?? 40) * 0.4, // Relative icon size
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(
+                widget.mediaType == 'video'
+                  ? 'Video preview unavailable'
+                  : 'No preview available',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       height: widget.height,
       width: widget.width,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
       child: CachedNetworkImage(
         key: _imageKey,
         imageUrl: widget.imageUrl,
@@ -78,7 +152,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
             height: widget.height,
             width: widget.width,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -92,7 +166,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
                 const SizedBox(height: 12),
                 Text(
                   downloadProgress.progress != null 
-                    ? '${(downloadProgress.progress! * 100).toInt()}%'
+                    ? '${_safePercentage(downloadProgress.progress! * 100)}%'
                     : 'Loading...',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -116,7 +190,7 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
               height: widget.height,
               width: widget.width,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.errorContainer.withAlpha(ColorUtils.safeAlpha(0.3)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: Theme.of(context).colorScheme.error.withOpacity(0.3),
@@ -156,8 +230,8 @@ class _ImprovedImageLoaderState extends State<ImprovedImageLoader>
         fadeOutDuration: const Duration(milliseconds: 200),
         
         // 🔥 SOLUSI 9: Image caching untuk performa
-        memCacheHeight: widget.height?.toInt(),
-        memCacheWidth: widget.width?.toInt(),
+        memCacheHeight: _safeToInt(widget.height),
+        memCacheWidth: _safeToInt(widget.width),
         maxHeightDiskCache: 1000, // Resize untuk menghemat storage
         maxWidthDiskCache: 1000,
         
@@ -230,7 +304,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
     return Container(
       height: widget.height,
       width: widget.width,
-      color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+      color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
       child: Image.network(
         widget.imageUrl,
         fit: widget.fit,
@@ -254,7 +328,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
             height: widget.height,
             width: widget.width,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(
@@ -268,7 +342,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
                 const SizedBox(height: 12),
                 Text(
                   progress != null 
-                    ? '${(progress * 100).toInt()}%'
+                    ? '${_safePercentage(progress * 100)}%'
                     : 'Loading...',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
@@ -296,7 +370,7 @@ class _BasicImageLoaderState extends State<BasicImageLoader>
               height: widget.height,
               width: widget.width,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.errorContainer.withOpacity(0.3),
+                color: Theme.of(context).colorScheme.errorContainer.withAlpha(ColorUtils.safeAlpha(0.3)),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: Theme.of(context).colorScheme.error.withOpacity(0.3),

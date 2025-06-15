@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:nasa_daily_snapshot/models/apod_model.dart';
 import 'package:nasa_daily_snapshot/providers/apod_provider.dart';
@@ -6,6 +7,7 @@ import 'package:nasa_daily_snapshot/providers/favorites_provider.dart';
 import 'package:nasa_daily_snapshot/screens/detail_screen.dart';
 import 'package:nasa_daily_snapshot/widgets/image_loader.dart';
 import 'package:nasa_daily_snapshot/widgets/shimmer_loading.dart';
+import 'package:nasa_daily_snapshot/utils/color_utils.dart';
 
 class SearchScreen extends StatefulWidget {
   final ApodProvider apodProvider;
@@ -24,6 +26,7 @@ class SearchScreen extends StatefulWidget {
 class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
+  final ScrollController _scrollController = ScrollController();
   bool _hasSearched = false;
   
   @override
@@ -33,13 +36,16 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    _scrollController.addListener(_onScroll);
   }
   
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
+    _scrollController.removeListener(_onScroll);
     _searchController.dispose();
     _searchFocusNode.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
   
@@ -55,11 +61,22 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
   void _performSearch() {
     final query = _searchController.text.trim();
     if (query.isNotEmpty) {
+      // Clear previous results and reset scroll position before new search
+      _scrollController.jumpTo(0); 
       widget.apodProvider.searchApods(query);
       setState(() {
         _hasSearched = true;
       });
       FocusScope.of(context).unfocus();
+    }
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && // Trigger before reaching the very end
+        !widget.apodProvider.isLoadingMoreSearchResults &&
+        widget.apodProvider.hasMoreSearchResults &&
+        _searchController.text.isNotEmpty) {
+      widget.apodProvider.loadMoreSearchResults();
     }
   }
 
@@ -99,6 +116,9 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
                 fillColor: Theme.of(context).colorScheme.surface,
               ),
               textInputAction: TextInputAction.search,
+              onChanged: (value) {
+                setState(() {}); // Trigger rebuild to show/hide clear button
+              },
               onSubmitted: (_) => _performSearch(),
             ),
           ),
@@ -106,11 +126,19 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
             child: _buildSearchResults(),
           ),
         ],
-      ),
+        ),
     );
   }
 
   Widget _buildSearchResults() {
+    if (kDebugMode) {
+      debugPrint('SearchScreen: _buildSearchResults called.');
+      debugPrint('SearchScreen: _hasSearched: $_hasSearched');
+      debugPrint('SearchScreen: apodProvider.isSearching: ${widget.apodProvider.isSearching}');
+      debugPrint('SearchScreen: apodProvider.error: ${widget.apodProvider.error}');
+      debugPrint('SearchScreen: apodProvider.searchResults.length: ${widget.apodProvider.searchResults.length}');
+    }
+
     if (!_hasSearched) {
       return _buildInitialView();
     }
@@ -142,6 +170,7 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
     }
     
     final results = widget.apodProvider.searchResults;
+    if (kDebugMode) debugPrint('SearchScreen: results.length: ${results.length}');
     
     if (results.isEmpty) {
       return Center(
@@ -165,9 +194,18 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
     }
     
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(8),
-      itemCount: results.length,
+      itemCount: results.length + (widget.apodProvider.isLoadingMoreSearchResults ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index == results.length && widget.apodProvider.isLoadingMoreSearchResults) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (index >= results.length) return const SizedBox.shrink(); // Should not happen
+        
         final apod = results[index];
         return _buildSearchResultItem(apod);
       },
@@ -176,13 +214,15 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
   
   Widget _buildInitialView() {
     return Center(
-      child: Column(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0), // Added padding for better spacing
+        child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.search,
             size: 64,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+            color: Theme.of(context).colorScheme.primary.withAlpha(ColorUtils.safeAlpha(0.5)),
           ),
           const SizedBox(height: 16),
           Text(
@@ -208,8 +248,9 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
             ),
           ),
         ],
-      ),
-    );
+      ), // Column
+      ), // SingleChildScrollView
+    ); // Center
   }
   
   Widget _buildLoadingView() {
@@ -221,7 +262,7 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
           margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           child: Row(
             children: [
-              ShimmerLoading(
+              const ShimmerLoading(
                 height: 100,
                 width: 100,
               ),
@@ -269,6 +310,7 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
             builder: (context) => DetailScreen(
               apod: apod,
               favoritesProvider: widget.favoritesProvider,
+              heroTagPrefix: 'search_',
             ),
           ),
         ),
@@ -281,13 +323,15 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
                 bottomLeft: Radius.circular(12),
               ),
               child: Hero(
-                tag: 'apod_image_${apod.date}',
+                tag: 'search_apod_image_${apod.date}',
                 child: Stack(
                   children: [
                     ImprovedImageLoader(
                       imageUrl: apod.displayUrl,
+                      mediaType: apod.mediaType,
                       height: 100,
                       width: 100,
+                      fit: BoxFit.cover,
                     ),
                     if (apod.mediaType == 'video')
                       Positioned.fill(
@@ -295,7 +339,7 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
                           child: Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.6),
+                              color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(

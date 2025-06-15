@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nasa_daily_snapshot/providers/theme_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ThemeProvider themeProvider;
@@ -19,7 +18,7 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
   bool _notificationsEnabled = false;
   String _imageQuality = 'high';
   bool _saveToGallery = true;
-  String _appVersion = '';
+  final String _appVersion = '';
   
   @override
   bool get wantKeepAlive => true;

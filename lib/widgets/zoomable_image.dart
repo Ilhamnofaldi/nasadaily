@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../utils/color_utils.dart';
 
 class ZoomableImage extends StatefulWidget {
   final String imageUrl;
@@ -54,7 +56,7 @@ class _ZoomableImageState extends State<ZoomableImage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: _showControls ? AppBar(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withAlpha(ColorUtils.safeAlpha(0.5)),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
         title: const Text('Image Viewer', style: TextStyle(color: Colors.white)),
@@ -92,6 +94,30 @@ class _ZoomableImageState extends State<ZoomableImage> {
               minScale: 0.5,
               maxScale: 5.0,
               child: Center(
+                child: CachedNetworkImage(
+                  imageUrl: widget.imageUrl,
+                  fit: BoxFit.contain,
+                  progressIndicatorBuilder: (context, url, downloadProgress) {
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: downloadProgress.progress,
+                        color: Colors.white, // Added color for visibility on black background
+                      ),
+                    );
+                  },
+                  errorWidget: (context, url, error) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, color: Colors.red, size: 50),
+                          SizedBox(height: 8),
+                          Text('Failed to load image.', style: TextStyle(color: Colors.white)),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             if (_showControls)
@@ -105,7 +131,7 @@ class _ZoomableImageState extends State<ZoomableImage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.5)),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Row(

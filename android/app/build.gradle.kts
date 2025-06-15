@@ -37,8 +37,6 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-
-    namespace = "dev.fluttercommunity.plus.packageinfo"
 }
 
 flutter {

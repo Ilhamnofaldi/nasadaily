@@ -8,6 +8,8 @@ import 'package:nasa_daily_snapshot/screens/favorites_screen.dart';
 import 'package:nasa_daily_snapshot/screens/settings_screen.dart';
 import 'package:nasa_daily_snapshot/screens/search_screen.dart';
 import 'package:nasa_daily_snapshot/utils/app_theme.dart';
+import 'package:nasa_daily_snapshot/utils/color_utils.dart';
+import 'package:provider/provider.dart'; // Import the provider package
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +24,8 @@ void main() async {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
+      // Consider making these adaptive to theme later
+      statusBarIconBrightness: Brightness.dark, 
       statusBarBrightness: Brightness.light,
     ),
   );
@@ -33,44 +36,60 @@ void main() async {
   
   final favoritesProvider = FavoritesProvider();
   await favoritesProvider.initialize();
+
+  final apodProvider = ApodProvider();
+  // If ApodProvider has an async initialize method that needs to be called,
+  // ensure it's defined and uncomment the line below:
+  // await apodProvider.initialize(); 
   
   runApp(
-    MyApp(
-      themeProvider: themeProvider,
-      favoritesProvider: favoritesProvider,
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: themeProvider),
+        ChangeNotifierProvider.value(value: favoritesProvider),
+        // Assuming ApodProvider is also a ChangeNotifier or can be provided as such.
+        // If it's not a ChangeNotifier, you might use Provider.value instead.
+        ChangeNotifierProvider.value(value: apodProvider),
+      ],
+      child: const MyApp(), // MyApp no longer takes providers in constructor
     ),
   );
 }
 
 class MyApp extends StatefulWidget {
-  final ThemeProvider themeProvider;
-  final FavoritesProvider favoritesProvider;
-
-  const MyApp({
-    Key? key, 
-    required this.themeProvider, 
-    required this.favoritesProvider,
-  }) : super(key: key);
+  // Constructor no longer needs provider arguments
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  late ApodProvider _apodProvider;
+  late ThemeProvider _themeProvider; // To manage listener
 
   @override
   void initState() {
     super.initState();
-    _apodProvider = ApodProvider();
-    
-    // Listen to theme changes
-    widget.themeProvider.addListener(_onThemeChanged);
+    // Access ThemeProvider from context for listening
+    // Ensure this is done after the first frame if context is needed immediately,
+    // or use didChangeDependencies. For addListener, initState is fine if
+    // Provider.of is called with listen:false or in a post-frame callback.
+    // A safer way is to get it in didChangeDependencies or build.
+    // For now, let's get it once and add listener.
+    _themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    _themeProvider.addListener(_onThemeChanged);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // If you need to re-obtain providers when dependencies change, do it here.
+    // For listeners, often initState with listen:false is sufficient if the instance doesn't change.
   }
 
   @override
   void dispose() {
-    widget.themeProvider.removeListener(_onThemeChanged);
+    _themeProvider.removeListener(_onThemeChanged);
     super.dispose();
   }
 
@@ -80,16 +99,22 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Access providers from context
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final apodProvider = Provider.of<ApodProvider>(context);
+    final favoritesProvider = Provider.of<FavoritesProvider>(context);
+
     return MaterialApp(
       title: 'NASA Daily Snapshot',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
-      themeMode: widget.themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: MainScreen(
-        apodProvider: _apodProvider,
-        favoritesProvider: widget.favoritesProvider,
-        themeProvider: widget.themeProvider,
+        // Pass providers to MainScreen
+        apodProvider: apodProvider,
+        favoritesProvider: favoritesProvider,
+        themeProvider: themeProvider,
       ),
     );
   }
@@ -155,7 +180,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          indicatorColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+          indicatorColor: Theme.of(context).colorScheme.primary.withAlpha(ColorUtils.safeAlpha(0.2)), // Replaced .withOpacity(0.2)
           labelTextStyle: WidgetStateProperty.all(
             TextStyle(
               fontSize: 12,

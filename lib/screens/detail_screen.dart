@@ -3,16 +3,20 @@ import 'package:intl/intl.dart';
 import 'package:nasa_daily_snapshot/models/apod_model.dart';
 import 'package:nasa_daily_snapshot/providers/favorites_provider.dart';
 import 'package:nasa_daily_snapshot/widgets/zoomable_image.dart';
+import 'package:nasa_daily_snapshot/widgets/image_loader.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:nasa_daily_snapshot/utils/color_utils.dart';
 
 class DetailScreen extends StatefulWidget {
   final ApodModel apod;
   final FavoritesProvider favoritesProvider;
+  final String? heroTagPrefix; // Add this
 
   const DetailScreen({
     Key? key, 
     required this.apod,
     required this.favoritesProvider,
+    this.heroTagPrefix, // Add this
   }) : super(key: key);
 
   @override
@@ -61,19 +65,29 @@ class _DetailScreenState extends State<DetailScreen> {
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         background: Hero(
-          tag: 'apod_image_${widget.apod.date}',
+          tag: widget.heroTagPrefix != null 
+              ? '${widget.heroTagPrefix}apod_image_${widget.apod.date}' 
+              : 'apod_image_${widget.apod.date}',
           child: GestureDetector(
             onTap: () => _openFullScreenImage(context),
             child: Stack(
               fit: StackFit.expand,
               children: [
+                if (widget.apod.mediaType == 'image')
+                  ImprovedImageLoader(
+                    imageUrl: widget.apod.displayUrl,
+                    mediaType: widget.apod.mediaType, // Added mediaType
+                    fit: BoxFit.cover,
+                    width: double.infinity, // Ensure it takes full width
+                    height: MediaQuery.of(context).size.height * 0.5, // Match expandedHeight
+                  ),
                 if (widget.apod.mediaType == 'video')
                   Center(
                     child: IconButton(
                       icon: Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -104,10 +118,34 @@ class _DetailScreenState extends State<DetailScreen> {
     );
   }
 
+  void _openFullScreenImage(BuildContext context) {
+    if (widget.apod.mediaType == 'image') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ZoomableImage(imageUrl: widget.apod.displayUrl),
+        ),
+      );
+    }
+    // Jika video, mungkin tidak melakukan apa-apa atau membuka pemutar video kustom jika ada
+  }
+
+  Future<void> _openVideo(String url) async {
+    final Uri videoUrl = Uri.parse(url);
+    if (await canLaunchUrl(videoUrl)) {
+      await launchUrl(videoUrl, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not launch $url')),
+      );
+    }
+  }
+
   Widget _buildContent() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
@@ -148,6 +186,7 @@ class _DetailScreenState extends State<DetailScreen> {
           const SizedBox(height: 24),
           _buildMetadataSection(),
         ],
+      ),
       ),
     );
   }
@@ -213,37 +252,6 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
       ],
     );
-  }
-
-  void _openFullScreenImage(BuildContext context) {
-    if (widget.apod.mediaType == 'image') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ZoomableImage(
-            imageUrl: widget.apod.highResUrl,
-          ),
-        ),
-      );
-    } else if (widget.apod.mediaType == 'video') {
-      _openVideo(widget.apod.url);
-    }
-  }
-  
-  Future<void> _openVideo(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not open video'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 
   void _toggleFavorite() {

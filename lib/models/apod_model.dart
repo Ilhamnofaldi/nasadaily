@@ -47,8 +47,11 @@ class ApodModel {
   
   String get displayUrl {
     if (mediaType == 'video') {
-      return thumbnailUrl ?? url;
+      // If it's a video, prioritize thumbnail_url.
+      // If thumbnail_url is null, return an empty string to indicate no valid preview image.
+      return thumbnailUrl ?? ''; 
     }
+    // For images, use the standard URL.
     return url;
   }
   

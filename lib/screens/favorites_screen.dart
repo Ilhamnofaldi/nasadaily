@@ -6,6 +6,7 @@ import 'package:nasa_daily_snapshot/providers/favorites_provider.dart';
 import 'package:nasa_daily_snapshot/screens/detail_screen.dart';
 import 'package:nasa_daily_snapshot/widgets/image_loader.dart';
 import 'package:nasa_daily_snapshot/widgets/animated_grid_item.dart';
+import 'package:nasa_daily_snapshot/utils/color_utils.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final FavoritesProvider favoritesProvider;
@@ -47,7 +48,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
             Icon(
               Icons.favorite_outline,
               size: 64,
-              color: Theme.of(context).colorScheme.secondary.withOpacity(0.5),
+              color: Theme.of(context).colorScheme.secondary.withAlpha(ColorUtils.safeAlpha(0.5)),
             ),
             const SizedBox(height: 16),
             Text(
@@ -111,6 +112,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
             builder: (context) => DetailScreen(
               apod: apod,
               favoritesProvider: widget.favoritesProvider,
+              heroTagPrefix: 'favorite_',
             ),
           ),
         ),
@@ -120,9 +122,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
             Stack(
               children: [
                 Hero(
-                  tag: 'apod_image_${apod.date}',
+                  tag: 'favorite_apod_image_${apod.date}',
                   child: ImprovedImageLoader(
                     imageUrl: apod.displayUrl,
+                    mediaType: apod.mediaType, // Added mediaType
                     height: 150,
                     width: double.infinity,
                   ),
@@ -133,7 +136,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.6),
+                          color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -164,7 +167,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
                       child: Container(
                         padding: const EdgeInsets.all(4),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.5)),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
