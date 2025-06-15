@@ -98,7 +98,7 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          Formatters.formatDisplayDate(widget.apod.date),
+                          Formatters.formatDisplayDate(DateTime.parse(widget.apod.date)),
                           style: TextStyle(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.w600,
