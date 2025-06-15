@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
@@ -23,11 +24,13 @@ class SearchScreen extends StatefulWidget {
   State<SearchScreen> createState() => _SearchScreenState();
 }
 
-class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClientMixin {
+class _SearchScreenState extends State<SearchScreen>
+    with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ScrollController _scrollController = ScrollController();
   bool _hasSearched = false;
+  Timer? _debounceTimer;
   
   @override
   bool get wantKeepAlive => true;
@@ -41,6 +44,7 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
   
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _scrollController.removeListener(_onScroll);
     _searchController.dispose();
@@ -50,24 +54,46 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
   }
   
   void _onSearchChanged() {
+    _debounceTimer?.cancel();
+    
     if (_searchController.text.isEmpty) {
       widget.apodProvider.clearSearch();
       setState(() {
         _hasSearched = false;
+      });
+    } else {
+      // Debounce search for 800ms
+      _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+        _performSearch();
       });
     }
   }
   
   void _performSearch() {
     final query = _searchController.text.trim();
+    if (kDebugMode) {
+      debugPrint('SearchScreen: _performSearch called with query: "$query"');
+    }
     if (query.isNotEmpty) {
       // Clear previous results and reset scroll position before new search
-      _scrollController.jumpTo(0); 
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+      if (kDebugMode) {
+        debugPrint('SearchScreen: Calling apodProvider.searchApods with query: "$query"');
+      }
       widget.apodProvider.searchApods(query);
       setState(() {
         _hasSearched = true;
       });
+      if (kDebugMode) {
+        debugPrint('SearchScreen: _hasSearched set to true');
+      }
       FocusScope.of(context).unfocus();
+    } else {
+      if (kDebugMode) {
+        debugPrint('SearchScreen: Query is empty, not performing search');
+      }
     }
   }
 
@@ -135,6 +161,8 @@ class _SearchScreenState extends State<SearchScreen> with AutomaticKeepAliveClie
       debugPrint('SearchScreen: _buildSearchResults called.');
       debugPrint('SearchScreen: _hasSearched: $_hasSearched');
       debugPrint('SearchScreen: apodProvider.isSearching: ${widget.apodProvider.isSearching}');
+      debugPrint('SearchScreen: apodProvider.isLoadingMoreSearchResults: ${widget.apodProvider.isLoadingMoreSearchResults}');
+      debugPrint('SearchScreen: apodProvider.hasMoreSearchResults: ${widget.apodProvider.hasMoreSearchResults}');
       debugPrint('SearchScreen: apodProvider.error: ${widget.apodProvider.error}');
       debugPrint('SearchScreen: apodProvider.searchResults.length: ${widget.apodProvider.searchResults.length}');
     }

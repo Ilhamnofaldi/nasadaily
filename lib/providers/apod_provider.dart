@@ -87,11 +87,21 @@ class ApodProvider extends ChangeNotifier {
   }
   
   Future<void> searchApods(String query) async {
+    if (kDebugMode) {
+      debugPrint('ApodProvider: searchApods called with query: "$query"');
+    }
+    
     if (query.isEmpty) {
+      if (kDebugMode) {
+        debugPrint('ApodProvider: Query is empty, clearing search');
+      }
       clearSearch();
       return;
     }
 
+    if (kDebugMode) {
+      debugPrint('ApodProvider: Setting _isSearching to true');
+    }
     _isSearching = true;
     _currentSearchQuery = query;
     _searchResults = [];
@@ -101,8 +111,19 @@ class ApodProvider extends ChangeNotifier {
     notifyListeners();
 
     if (kDebugMode) print('🔍 Initializing search for: $query');
-    await loadMoreSearchResults(isInitialSearch: true);
+    
+    try {
+      await loadMoreSearchResults(isInitialSearch: true);
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('ApodProvider: Error in searchApods: $e');
+      }
+      _error = _getFormattedError(e.toString());
+    }
 
+    if (kDebugMode) {
+      debugPrint('ApodProvider: Setting _isSearching to false');
+    }
     _isSearching = false;
     notifyListeners();
   }
