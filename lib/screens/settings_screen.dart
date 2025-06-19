@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:nasa_daily_snapshot/providers/theme_provider.dart';
+import 'package:nasa_daily_snapshot/providers/auth_provider.dart';
 import 'package:nasa_daily_snapshot/utils/color_utils.dart';
 import 'package:nasa_daily_snapshot/utils/extensions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   final ThemeProvider themeProvider;
@@ -82,9 +84,9 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
                 showDialog(
                   context: context,
                   builder: (context) => AlertDialog(
-                    title: const Text('Clear All Data'),
+                    title: const Text('Logout'),
                     content: const Text(
-                      'This will clear all favorites and settings. This action cannot be undone.',
+                      'Are you sure you want to logout?',
                     ),
                     actions: [
                       TextButton(
@@ -92,26 +94,31 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
                         child: const Text('Cancel'),
                       ),
                       TextButton(
-                        onPressed: () {
-                          // Clear all data
-                          SharedPreferences.getInstance().then((prefs) {
-                            prefs.clear();
-                            setState(() {
-                              _notificationsEnabled = false;
-                              _imageQuality = 'high';
-                              _saveToGallery = true;
-                            });
-                            widget.themeProvider.toggleTheme();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('All data cleared'),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                            Navigator.of(context).pop();
-                          });
+                        onPressed: () async {
+                          try {
+                            await context.read<AuthProvider>().signOut();
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Successfully logged out'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error logging out: ${e.toString()}'),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          }
                         },
-                        child: const Text('Clear All', style: TextStyle(color: Colors.red)),
+                        child: const Text('Logout', style: TextStyle(color: Colors.red)),
                       ),
                     ],
                   ),
@@ -121,7 +128,7 @@ class _SettingsScreenState extends State<SettingsScreen> with AutomaticKeepAlive
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Clear All Data'),
+              child: const Text('Logout'),
             ),
           ),
           const SizedBox(height: 24),

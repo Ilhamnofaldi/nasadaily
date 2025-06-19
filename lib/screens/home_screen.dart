@@ -200,21 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                             size: 24,
                           ),
                           onPressed: () {
-                            widget.favoritesProvider.toggleFavorite(apod);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  isFavorite 
-                                      ? 'Removed from favorites' 
-                                      : 'Added to favorites'
-                                ),
-                                duration: const Duration(seconds: 1),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                            );
+                            _toggleFavorite(apod);
                           },
                           tooltip: isFavorite ? 'Remove from favorites' : 'Add to favorites',
                         ),
@@ -452,6 +438,21 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     if (picked != null) {
       final formattedDate = DateFormat('yyyy-MM-dd').format(picked);
       widget.apodProvider.fetchApod(date: formattedDate);
+    }
+  }
+
+  Future<void> _toggleFavorite(ApodModel apod) async {
+    try {
+      await widget.favoritesProvider.toggleFavorite(apod);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 }

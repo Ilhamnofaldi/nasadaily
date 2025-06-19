@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "1051259865595",
+    "project_id": "nasasnapshots",
+    "storage_bucket": "nasasnapshots.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1051259865595:android:fb61508c0794bdf390a35e",
+        "android_client_info": {
+          "package_name": "com.example.nasa_daily_snapshot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1051259865595-escpl96p38813262f90o75bsv83v7un9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.nasa_daily_snapshot",
+            "certificate_hash": "c7a67da37474021cc0c08844962badc008e426cc"
+          }
+        },
+        {
+          "client_id": "1051259865595-ntdaskakje0roork4kks3glt0ml77vhm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.nasa_daily_snapshot",
+            "certificate_hash": "d60e8e733c825eef1651aada8b92e163d69df6a5"
+          }
+        },
+        {
+          "client_id": "1051259865595-eoe111gpv93dsio3ecrfkv3mlck4elcs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBBAXT2h4viHmqyq_djBxQ8HsxlTQ5goQw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1051259865595-eoe111gpv93dsio3ecrfkv3mlck4elcs.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1051259865595-oqiah2og5j6u6cq1ftbcggo43ci4dk9l.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.nasaDailySnapshot"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

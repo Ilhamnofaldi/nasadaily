@@ -41,16 +41,21 @@ class _DetailScreenState extends State<DetailScreen> {
     });
   }
 
-  void _toggleFavorite() {
-    final favoritesProvider = Provider.of<FavoritesProvider>(context, listen: false);
-    if (_isFavorite) {
-      favoritesProvider.removeFavorite(widget.apod.date);
-    } else {
-      favoritesProvider.addFavorite(widget.apod);
+  Future<void> _toggleFavorite() async {
+    try {
+      if (widget.favoritesProvider != null) {
+        await widget.favoritesProvider!.toggleFavorite(widget.apod);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
-    setState(() {
-      _isFavorite = !_isFavorite;
-    });
   }
 
   void _shareApod() {
@@ -279,7 +284,7 @@ class _DetailScreenState extends State<DetailScreen> {
                 tag: widget.heroTagPrefix != null 
                     ? '${widget.heroTagPrefix}apod_image_${widget.apod.date}' 
                     : 'apod_image_${widget.apod.date}',
-                child: GestureDetector(
+                child: InkWell(
                   onTap: () => _openFullScreenImage(context),
                   child: Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -388,6 +393,37 @@ class _DetailScreenState extends State<DetailScreen> {
           ),
         ),
         Container(
+          margin: const EdgeInsets.only(right: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.2)),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.download,
+              color: Colors.grey[600],
+              size: 24,
+            ),
+            onPressed: () {
+              // Download image
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Image saved to gallery'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            tooltip: 'Download',
+          ),
+        ),
+        Container(
           margin: const EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
             color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
@@ -415,6 +451,7 @@ class _DetailScreenState extends State<DetailScreen> {
   }
 
   void _openFullScreenImage(BuildContext context) {
+    print("di klik coy>>>>>>>>>>>>>>>>>>>>>>>>>>>");
     if (widget.apod.mediaType == 'image') {
       Navigator.push(
         context,

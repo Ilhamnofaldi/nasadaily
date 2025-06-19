@@ -106,6 +106,21 @@ class _SearchScreenState extends State<SearchScreen>
     }
   }
 
+  Future<void> _toggleFavorite(ApodModel apod) async {
+    try {
+      await widget.favoritesProvider.toggleFavorite(apod);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite: ${e.toString()}'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -415,21 +430,7 @@ class _SearchScreenState extends State<SearchScreen>
                 isFavorite ? Icons.favorite : Icons.favorite_outline,
                 color: isFavorite ? Colors.red : null,
               ),
-              onPressed: () {
-                widget.favoritesProvider.toggleFavorite(apod);
-                setState(() {});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      isFavorite 
-                          ? 'Removed from favorites' 
-                          : 'Added to favorites'
-                    ),
-                    duration: const Duration(seconds: 1),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
+              onPressed: () => _toggleFavorite(apod),
             ),
           ],
         ),

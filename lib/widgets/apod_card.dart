@@ -238,6 +238,21 @@ class ApodCard extends StatelessWidget {
     );
   }
   
+  Future<void> _toggleFavorite(BuildContext context, FavoritesProvider provider) async {
+    try {
+      await provider.toggleFavorite(apod);
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update favorite: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+  
   Widget _buildActionButtons(BuildContext context) {
     return Row(
       children: [
@@ -330,26 +345,6 @@ class ApodCard extends StatelessWidget {
   
   void _navigateToDetail(BuildContext context) {
     AppRouter.goToDetail(context, apod);
-  }
-  
-  void _toggleFavorite(BuildContext context, FavoritesProvider provider) {
-    if (provider.isFavorite(apod.date)) {
-      provider.removeFavorite(apod.date);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Dihapus dari favorit'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      provider.addFavorite(apod);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ditambahkan ke favorit'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
   }
 
   Future<void> _shareApod(BuildContext context) async {
