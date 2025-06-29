@@ -13,6 +13,94 @@ A beautiful Flutter application that displays NASA's Astronomy Picture of the Da
 - **Image Zoom**: Pinch to zoom on high-resolution images
 - **Share**: Share amazing space content with friends
 
+## Arsitektur & Teknologi
+
+### **Teknologi Utama**
+- **Framework**: Flutter dengan Dart SDK ^3.7.0
+- **State Management**: Provider pattern
+- **HTTP Client**: http dan dio untuk API calls
+- **Caching**: cached_network_image & shared_preferences
+- **Local Storage**: SharedPreferences untuk penyimpanan lokal
+- **Notifications**: flutter_local_notifications
+
+### **Struktur Arsitektur**
+```
+lib/
+├── constants/     # Konstanta aplikasi & string
+├── core/         # Konfigurasi inti & error handling
+├── models/       # Data models (ApodModel, FavoriteApod)
+├── providers/    # State management (5 providers)
+├── screens/      # Layar UI (8+ screens)
+├── services/     # Layer service (5 services)
+├── themes/       # Tema & styling
+├── utils/        # Utilitas & helper functions
+├── widgets/      # Komponen UI reusable
+└── main.dart     # Entry point
+```
+
+---
+
+## Fungsionalitas Utama
+
+### 🏠 **Home Screen**
+- **Tampilan APOD Hari Ini**: Menampilkan gambar/video astronomi terkini dari NASA
+- **Hero Image**: Gambar utama dengan zoom support
+- **Informasi Detail**: Judul, tanggal, dan penjelasan lengkap
+- **Media Support**: Mendukung gambar dan video
+- **Quick Actions**: Favorit, share, dan download
+
+### 🔍 **Search Screen**  
+- **Pencarian Berdasarkan Kata Kunci**: Search di title dan explanation
+- **Pencarian Berdasarkan Tanggal**: Format YYYY-MM-DD
+- **Historical Browse**: Jelajahi APOD dari 1995-sekarang
+- **Pagination**: Load more dengan chunk 30 hari
+- **Filter Results**: Hasil pencarian yang difilter
+- **Loading States**: Indikator loading yang jelas
+
+### ❤️ **Favorites Screen**
+- **Penyimpanan Lokal**: Favorit tersimpan di SharedPreferences
+- **User-Specific**: Favorit per pengguna (jika authenticated)
+- **Sorting**: Urutkan berdasarkan tanggal (terbaru dulu)
+- **Quick Actions**: Toggle favorit, remove, dan view details
+- **Persistent Storage**: Data favorit tersimpan permanen
+
+### ⚙️ **Settings/Profile Screen** 
+- **Theme Management**: Dark/Light mode toggle
+- **User Authentication**: Login sistem (saat ini offline mode)
+- **Notification Settings**: Pengaturan notifikasi harian
+- **Cache Management**: Pengelolaan cache gambar
+- **About Information**: Info aplikasi dan developer
+
+---
+
+## Layer Service & API
+
+### 🌐 **API Service**
+- **NASA APOD API**: Integrasi dengan `https://api.nasa.gov/planetary/apod`
+- **API Key Management**: Konfigurasi API key untuk rate limit 1000/jam
+- **Caching Strategy**: Cache 6 jam untuk mengurangi API calls
+- **Error Handling**: Handle rate limit, network errors, 404, dll
+- **Date Range Support**: Fetch multiple APOD sekaligus
+- **Fallback Mechanism**: Gunakan cache lama jika API gagal
+
+### 💾 **Cache Service**
+- **Image Caching**: Cached network images dengan fallback
+- **Data Caching**: Cache response API di SharedPreferences
+- **Expiry Management**: Otomatis expire cache setelah 6 jam
+- **Cache Clearing**: Opsi clear cache manual
+
+### 📱 **Notification Service**
+- **Local Notifications**: Flutter local notifications
+- **Save Notifications**: Notifikasi saat menyimpan gambar
+- **Progress Notifications**: Indikator progress download
+- **Daily APOD**: Notifikasi harian untuk APOD baru
+- **Permission Handling**: Request permission untuk notifikasi
+
+### 📁 **Media Service**
+- **Image Download**: Save image ke galeri perangkat
+- **Permission Management**: Handle storage permissions
+- **Gallery Integration**: Integrasi dengan galeri sistem
+- **Share Functionality**: Share image/link ke aplikasi lain
 
 *Screenshots will be added here*
 
