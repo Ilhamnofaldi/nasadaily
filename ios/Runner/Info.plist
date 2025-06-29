@@ -45,5 +45,43 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Permission untuk Photo Library -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>NASA Daily Snapshot needs access to your photo library to save astronomy images for offline viewing.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>NASA Daily Snapshot needs permission to save astronomy images to your photo library.</string>
+	
+	<!-- Permission untuk Notifications -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
+	
+	<!-- Permission untuk Internet/Network -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>apod.nasa.gov</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
+	
+	<!-- App Tracking Transparency (iOS 14.5+) -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This app does not track your data. This permission is required by some third-party SDKs.</string>
+	
+	<!-- Face ID/Touch ID for secure login (optional) -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>NASA Daily Snapshot uses Face ID to secure your account access.</string>
 </dict>
 </plist>

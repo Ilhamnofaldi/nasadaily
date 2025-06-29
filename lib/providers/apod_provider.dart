@@ -19,6 +19,9 @@ class ApodProvider extends ChangeNotifier {
   final int _searchPageSizeInDays = 30; // Fetch 30 days at a time for search
   bool _hasMoreSearchResults = true;
 
+  // Fixed reference date to prevent future dates regardless of system clock
+  final DateTime _referenceDate = DateTime(2023, 12, 31);
+
   bool _isLoading = false; // For initial APOD fetch
   bool _isSearching = false; // For the initial search action
   bool _isLoadingMoreSearchResults = false; // For loading more search results
@@ -79,6 +82,11 @@ class ApodProvider extends ChangeNotifier {
     }
   }
   
+  // Method to fetch APOD by specific date
+  Future<void> fetchApodByDate(String dateStr) async {
+    await fetchApod(date: dateStr);
+  }
+  
   // 🔥 SOLUSI 12: Retry dengan backoff
   Future<void> retryFetch({String? date}) async {
     if (_isRetrying) return;
@@ -112,7 +120,11 @@ class ApodProvider extends ChangeNotifier {
     _isSearching = true;
     _currentSearchQuery = query;
     _searchResults = [];
-    _searchEndDate = DateTime.now(); // Start searching from today backwards
+    
+    // Use reference date instead of system date
+    DateTime now = DateTime.now();
+    _searchEndDate = now.isAfter(_referenceDate) ? _referenceDate : now;
+    
     _hasMoreSearchResults = true;
     _error = null;
     notifyListeners();
@@ -148,6 +160,23 @@ class ApodProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      // Use reference date as maximum
+      DateTime now = DateTime.now();
+      DateTime maxDate = now.isAfter(_referenceDate) ? _referenceDate : now;
+      
+      if (_searchEndDate.isAfter(maxDate)) {
+        _searchEndDate = maxDate;
+      }
+
+      // Guard against searching before APOD existed
+      final apodStartDate = DateTime(1995, 6, 16);
+      if (_searchEndDate.isBefore(apodStartDate)) {
+        _hasMoreSearchResults = false;
+        if (kDebugMode) print('🏁 Search range reached before APOD start date.');
+        notifyListeners();
+        return;
+      }
+      
       final DateTime fetchEndDate = _searchEndDate;
       final DateTime fetchStartDate = _searchEndDate.subtract(Duration(days: _searchPageSizeInDays -1)); // -1 because range is inclusive
       

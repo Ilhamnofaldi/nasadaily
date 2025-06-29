@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:nasa_daily_snapshot/models/apod_model.dart';
 import 'package:nasa_daily_snapshot/providers/apod_provider.dart';
 import 'package:nasa_daily_snapshot/providers/favorites_provider.dart';
@@ -33,12 +34,22 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
       appBar: AppBar(
         title: const Text('Favorites'),
       ),
-      body: _buildBody(context),
+      body: Consumer<FavoritesProvider>(
+        builder: (context, favoritesProvider, child) {
+          return _buildBody(context, favoritesProvider);
+        },
+      ),
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    final favorites = widget.favoritesProvider.favorites;
+  Widget _buildBody(BuildContext context, FavoritesProvider favoritesProvider) {
+    if (favoritesProvider.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    final favorites = favoritesProvider.favorites;
     
     if (favorites.isEmpty) {
       return Center(
@@ -79,11 +90,36 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
       );
     }
     
+    // Calculate responsive grid columns
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenWidth = MediaQuery.of(context).size.width;
+    int crossAxisCount = 2; // Default for portrait
+    double childAspectRatio = 0.75;
+    
+    if (isLandscape) {
+      if (screenWidth > 1200) {
+        crossAxisCount = 5;
+        childAspectRatio = 0.8;
+      } else if (screenWidth > 900) {
+        crossAxisCount = 4;
+        childAspectRatio = 0.8;
+      } else if (screenWidth > 600) {
+        crossAxisCount = 3;
+        childAspectRatio = 0.85;
+      }
+    } else {
+      // Portrait mode
+      if (screenWidth > 600) {
+        crossAxisCount = 3;
+        childAspectRatio = 0.75;
+      }
+    }
+    
     return GridView.builder(
       padding: const EdgeInsets.all(8),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.75,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        childAspectRatio: childAspectRatio,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
@@ -92,13 +128,13 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
         final apod = favorites[index];
         return AnimatedGridItem(
           index: index,
-          child: _buildFavoriteItem(context, apod),
+          child: _buildFavoriteItem(context, apod, favoritesProvider),
         );
       },
     );
   }
 
-  Widget _buildFavoriteItem(BuildContext context, ApodModel apod) {
+  Widget _buildFavoriteItem(BuildContext context, ApodModel apod, FavoritesProvider favoritesProvider) {
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 2,
@@ -111,7 +147,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
           MaterialPageRoute(
             builder: (context) => DetailScreen(
               apod: apod,
-              favoritesProvider: widget.favoritesProvider,
+              favoritesProvider: favoritesProvider,
               heroTagPrefix: 'favorite_',
             ),
           ),
@@ -154,15 +190,30 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        widget.favoritesProvider.removeFavorite(apod.date);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Removed from favorites'),
-                            duration: Duration(seconds: 1),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
+                      onTap: () async {
+                        try {
+                          await favoritesProvider.removeFavorite(apod.date);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Removed from favorites'),
+                                duration: Duration(seconds: 1),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error removing favorite: ${e.toString()}'),
+                                duration: const Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                       child: Container(
                         padding: const EdgeInsets.all(4),

@@ -36,9 +36,25 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+            isShrinkResources = false
+        }
+    }
+    
+    // Disable build features that cause art profile issues
+    buildFeatures {
+        buildConfig = false
+    }
+    
+    // Packaging options to avoid conflicts
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*"
+            )
         }
     }
 }
@@ -49,4 +65,11 @@ dependencies {
 
 flutter {
     source = "../.."
+}
+
+// Skip art profile compilation tasks
+tasks.whenTaskAdded {
+    if (name.contains("compileReleaseArtProfile") || name.contains("ArtProfile")) {
+        enabled = false
+    }
 }

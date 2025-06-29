@@ -13,9 +13,10 @@ import '../utils/formatters.dart';
 import '../utils/responsive.dart';
 import 'common_widgets.dart';
 import 'enhanced_image_loader.dart';
+import 'dart:ui';
 
 /// APOD card widget for displaying astronomy picture of the day
-class ApodCard extends StatelessWidget {
+class ApodCard extends StatefulWidget {
   final ApodModel apod;
   final VoidCallback? onTap;
   final bool showFavoriteButton;
@@ -40,22 +41,101 @@ class ApodCard extends StatelessWidget {
   }) : super(key: key);
   
   @override
+  State<ApodCard> createState() => _ApodCardState();
+}
+
+class _ApodCardState extends State<ApodCard> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.03,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    ));
+  }
+  
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+  
+  void _handleHover(bool isHovered) {
+    setState(() {
+      _isHovered = isHovered;
+      if (isHovered) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
+  }
+  
+  @override
   Widget build(BuildContext context) {
-    final heroTag = 'apod_${apod.date}_${DateTime.now().millisecondsSinceEpoch}';
+    final heroTag = 'apod_${widget.apod.date}_${DateTime.now().millisecondsSinceEpoch}';
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
-      width: width,
-      height: height,
-      margin: margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Card(
-        elevation: 2,
-        shadowColor: AppColors.shadowLight,
-        shape: RoundedRectangleBorder(
-          borderRadius: borderRadius ?? BorderRadius.circular(12),
-        ),
+      width: widget.width,
+      height: widget.height,
+      margin: widget.margin ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: MouseRegion(
+        onEnter: (_) => _handleHover(true),
+        onExit: (_) => _handleHover(false),
+        child: AnimatedBuilder(
+          animation: _scaleAnimation,
+          builder: (context, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(_isHovered ? 0.15 : 0.05),
+                      blurRadius: _isHovered ? 25 : 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            (isDark ? AppColors.surfaceDark : Colors.white).withOpacity(0.9),
+                            (isDark ? AppColors.neutralMedium : Colors.white).withOpacity(0.8),
+                          ],
+                        ),
+                        border: Border.all(
+                          color: AppColors.neutralLight.withOpacity(_isHovered ? 0.3 : 0.1),
+                          width: 1,
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
         child: InkWell(
-          onTap: onTap ?? () => _navigateToDetail(context),
-          borderRadius: borderRadius ?? BorderRadius.circular(12),
+                          onTap: widget.onTap ?? () => _navigateToDetail(context),
+                          borderRadius: widget.borderRadius ?? BorderRadius.circular(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -66,6 +146,14 @@ class ApodCard extends StatelessWidget {
               _buildContentSection(context),
             ],
           ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -74,51 +162,76 @@ class ApodCard extends StatelessWidget {
   Widget _buildImageSection(BuildContext context, String heroTag) {
     return Stack(
       children: [
-        // Main image
+        // Main image with futuristic overlay
         ClipRRect(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(borderRadius?.topLeft.x ?? 12),
-            topRight: Radius.circular(borderRadius?.topRight.x ?? 12),
+            topLeft: Radius.circular(widget.borderRadius?.topLeft.x ?? 20),
+            topRight: Radius.circular(widget.borderRadius?.topRight.x ?? 20),
           ),
           child: AspectRatio(
             aspectRatio: 16 / 9,
-            child: CustomNetworkImage(
-              imageUrl: apod.url,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                CustomNetworkImage(
+                  imageUrl: widget.apod.url,
               fit: BoxFit.cover,
               heroTag: heroTag,
               placeholder: const ShimmerImagePlaceholder(
                 width: double.infinity,
                 height: double.infinity,
               ),
+                ),
+                // Gradient overlay
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.transparent,
+                        AppColors.neutralDark.withOpacity(0.7),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
         
-        // Media type indicator
-        if (apod.mediaType == 'video')
+        // Media type indicator with minimal design
+        if (widget.apod.mediaType == 'video')
           Positioned(
-            top: 8,
-            left: 8,
+            top: 12,
+            left: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.7)),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.black.withOpacity(0.6),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
-                    Icons.play_circle_outline,
+                    Icons.play_circle_outline_rounded,
                     color: Colors.white,
                     size: 16,
                   ),
-                  const SizedBox(width: 4),
+                  const SizedBox(width: 6),
                   Text(
                     'Video',
-                    style: AppTypography.labelSmall(context).copyWith(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
                     ),
                   ),
                 ],
@@ -126,31 +239,54 @@ class ApodCard extends StatelessWidget {
             ),
           ),
         
-        // Favorite button
-        if (showFavoriteButton)
+        // Favorite button with glow effect
+        if (widget.showFavoriteButton)
           Positioned(
-            top: 8,
-            right: 8,
+            top: 12,
+            right: 12,
             child: _buildFavoriteButton(context),
           ),
         
-        // Date overlay
-        if (showDate)
+        // Date overlay with futuristic design
+        if (widget.showDate)
           Positioned(
-            bottom: 8,
-            right: 8,
+            bottom: 12,
+            left: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.7)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                Formatters.formatDisplayDate(DateTime.parse(apod.date)),
-                style: AppTypography.labelSmall(context).copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
+                color: AppColors.neutralDark.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(0.5),
+                  width: 1,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+              ),
+                  const SizedBox(width: 6),
+                  Text(
+                    Formatters.formatDisplayDate(DateTime.parse(widget.apod.date)),
+                    style: const TextStyle(
+                  color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                    ),
+                ),
+                ],
               ),
             ),
           ),
@@ -159,51 +295,47 @@ class ApodCard extends StatelessWidget {
   }
   
   Widget _buildContentSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Title
+          // Clean title
           Text(
-            apod.title,
-            style: AppTypography.headline6(context).copyWith(
-              color: AppColors.getTextColor(Theme.of(context).brightness == Brightness.dark),
+            widget.apod.title,
+            style: TextStyle(
+              fontSize: 18,
               fontWeight: FontWeight.w600,
+              color: _isHovered 
+                ? AppColors.primary 
+                : AppColors.getTextColor(isDark),
+              letterSpacing: 0.3,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
           
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           
-          // Date (if not shown as overlay)
-          if (!showDate)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                Formatters.formatDisplayDate(DateTime.parse(apod.date)),
-                style: AppTypography.bodySmall(context).copyWith(
-                  color: AppColors.getSecondaryTextColor(Theme.of(context).brightness == Brightness.dark),
-                ),
-              ),
-            ),
-          
-          // Explanation
-          if (showExplanation && apod.explanation.isNotEmpty)
+          // Explanation with improved styling
+          if (widget.showExplanation && widget.apod.explanation.isNotEmpty)
             Text(
-              apod.explanation.truncate(120),
-              style: AppTypography.bodyMedium(context).copyWith(
-                color: AppColors.getSecondaryTextColor(Theme.of(context).brightness == Brightness.dark),
-                height: 1.4,
+              widget.apod.explanation.truncate(120),
+              style: TextStyle(
+                color: isDark ? Colors.white70 : Colors.black87,
+                fontSize: 14,
+                height: 1.5,
+                letterSpacing: 0.3,
               ),
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
             ),
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           
-          // Action buttons
+          // Action buttons with futuristic design
           _buildActionButtons(context),
         ],
       ),
@@ -213,25 +345,25 @@ class ApodCard extends StatelessWidget {
   Widget _buildFavoriteButton(BuildContext context) {
     return Consumer<FavoritesProvider>(
       builder: (context, favoritesProvider, child) {
-        final isFavorite = favoritesProvider.isFavorite(apod.date);
+        final isFavorite = favoritesProvider.isFavorite(widget.apod.date);
         
-        return Container(
+        return GestureDetector(
+          onTap: () => _toggleFavorite(context, favoritesProvider),
+          child: Container(
+            padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.5)),
+              color: Colors.black.withOpacity(0.6),
             shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
           ),
-          child: IconButton(
-            onPressed: () => _toggleFavorite(context, favoritesProvider),
-            icon: Icon(
-              isFavorite ? Icons.favorite : Icons.favorite_border,
+            child: Icon(
+              isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
               color: isFavorite ? AppColors.error : Colors.white,
-              size: 20,
+              size: 18,
             ),
-            constraints: const BoxConstraints(
-              minWidth: 36,
-              minHeight: 36,
-            ),
-            padding: EdgeInsets.zero,
           ),
         );
       },
@@ -240,7 +372,7 @@ class ApodCard extends StatelessWidget {
   
   Future<void> _toggleFavorite(BuildContext context, FavoritesProvider provider) async {
     try {
-      await provider.toggleFavorite(apod);
+      await provider.toggleFavorite(widget.apod);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -254,107 +386,159 @@ class ApodCard extends StatelessWidget {
   }
   
   Widget _buildActionButtons(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Row(
       children: [
-        // Media type chip
+        // Media type chip with minimal design
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: apod.mediaType == 'video'
-                ? AppColors.accentViolet.withOpacity(0.1)
-                : AppColors.primary.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                apod.mediaType == 'video' ? Icons.play_circle : Icons.image,
-                size: 14,
-                color: apod.mediaType == 'video'
-                    ? AppColors.accentViolet
-                    : AppColors.primary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                apod.mediaType == 'video' ? 'Video' : 'Gambar',
-                style: AppTypography.caption(context).copyWith(
-                  color: apod.mediaType == 'video'
-                      ? AppColors.accentViolet
-                      : AppColors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Spacer(),
-        // Share button
-        IconButton(
-          onPressed: () => _shareApod(context),
-          icon: const Icon(Icons.share, size: 18),
-          style: IconButton.styleFrom(
-            padding: const EdgeInsets.all(8),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          tooltip: 'Bagikan',
-        ),
-        // Save button (only for images)
-        if (apod.mediaType == 'image')
-          IconButton(
-            onPressed: () => _saveImage(context),
-            icon: const Icon(Icons.download, size: 18),
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            color: AppColors.neutralLight.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.neutralLight.withOpacity(0.3),
+              width: 1,
             ),
-            tooltip: 'Simpan Gambar',
-          ),
-        // View detail button
-        TextButton(
-          onPressed: () => _navigateToDetail(context),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Lihat Detail',
-                style: AppTypography.caption(context).copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 4),
               Icon(
-                Icons.arrow_forward_ios,
-                size: 12,
-                color: AppColors.primary,
+                widget.apod.mediaType == 'video' 
+                  ? Icons.play_circle_rounded 
+                  : Icons.image_rounded,
+                size: 14,
+                color: AppColors.neutralLight,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                widget.apod.mediaType == 'video' ? 'Video' : 'Image',
+                style: TextStyle(
+                  color: AppColors.neutralLight,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.3,
+                ),
               ),
             ],
           ),
+        ),
+        
+        const Spacer(),
+        
+        // Minimal action buttons
+        Row(
+          children: [
+            _buildMinimalIconButton(
+              icon: Icons.share_rounded,
+          onPressed: () => _shareApod(context),
+              tooltip: 'Share',
+        ),
+            if (widget.apod.mediaType == 'image')
+              _buildMinimalIconButton(
+                icon: Icons.download_rounded,
+            onPressed: () => _saveImage(context),
+                tooltip: 'Download',
+              ),
+            const SizedBox(width: 12),
+            // Clean action button
+            GestureDetector(
+              onTap: () => _navigateToDetail(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+                  children: const [
+              Text(
+                      'View Details',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.3,
+                ),
+              ),
+                    SizedBox(width: 6),
+              Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 14,
+              ),
+            ],
+          ),
+              ),
+            ),
+          ],
         ),
       ],
     );
   }
   
+  Widget _buildMinimalIconButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+    required String tooltip,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppColors.neutralLight.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: IconButton(
+        onPressed: onPressed,
+        icon: Icon(icon, size: 16),
+        color: AppColors.neutralLight,
+        tooltip: tooltip,
+        padding: const EdgeInsets.all(6),
+        constraints: const BoxConstraints(
+          minWidth: 32,
+          minHeight: 32,
+        ),
+      ),
+    );
+  }
+  
   void _navigateToDetail(BuildContext context) {
-    AppRouter.goToDetail(context, apod);
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => DetailScreen(
+          apod: widget.apod,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(
+            opacity: animation,
+            child: child,
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _shareApod(BuildContext context) async {
     try {
-      await MediaService().shareApod(apod);
+      await MediaService().shareApod(widget.apod);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal membagikan: $e'),
+            content: Text('Failed to share: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -363,16 +547,16 @@ class ApodCard extends StatelessWidget {
   }
 
   Future<void> _saveImage(BuildContext context) async {
-    if (apod.mediaType != 'image') return;
+    if (widget.apod.mediaType != 'image') return;
     
     try {
-      final success = await MediaService().saveImageToGallery(apod);
+      final success = await MediaService().saveImageToGallery(widget.apod);
       
       if (context.mounted && success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Gambar berhasil disimpan ke galeri'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Image saved to gallery'),
+            backgroundColor: AppColors.success,
           ),
         );
       }
@@ -380,7 +564,7 @@ class ApodCard extends StatelessWidget {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal menyimpan gambar: $e'),
+            content: Text('Failed to save image: $e'),
             backgroundColor: AppColors.error,
           ),
         );

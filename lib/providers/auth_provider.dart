@@ -3,23 +3,48 @@ import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  FirebaseAuth? _auth;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? _user;
   bool _isLoading = false;
+  bool _hasFirebase = false;
+  bool _isLoggedInLocally = false; // For offline mode
 
   User? get user => _user;
   bool get isLoading => _isLoading;
-  bool get isAuthenticated => _user != null;
+  bool get isAuthenticated => _user != null || _isLoggedInLocally;
+  bool get hasFirebase => _hasFirebase;
 
   AuthProvider() {
-    _auth.authStateChanges().listen((User? user) {
-      _user = user;
-      notifyListeners();
-    });
+    _initializeAuth();
+  }
+
+  void _initializeAuth() {
+    try {
+      _auth = FirebaseAuth.instance;
+      _hasFirebase = true;
+      print('Firebase Auth available');
+      
+      _auth!.authStateChanges().listen((User? user) {
+        _user = user;
+        // If user is null (logged out), also clear local login state
+        if (user == null) {
+          _isLoggedInLocally = false;
+        }
+        notifyListeners();
+      });
+    } catch (e) {
+      _hasFirebase = false;
+      print('Firebase Auth not available: $e');
+    }
   }
 
   Future<void> signInWithGoogle() async {
+    if (!_hasFirebase || _auth == null) {
+      debugPrint('Firebase Auth not available');
+      return;
+    }
+    
     try {
       _isLoading = true;
       notifyListeners();
@@ -43,7 +68,7 @@ class AuthProvider extends ChangeNotifier {
       );
 
       // Sign in to Firebase with the Google credential
-      await _auth.signInWithCredential(credential);
+      await _auth!.signInWithCredential(credential);
     } catch (e) {
       debugPrint('Error signing in with Google: $e');
       rethrow;
@@ -55,13 +80,49 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
+      _isLoading = true;
+      notifyListeners();
+      
+      // Sign out from all services
+      final futures = <Future>[];
+      
+      if (_hasFirebase && _auth != null) {
+        futures.add(_auth!.signOut());
+      }
+      
+      // Always sign out from Google Sign In
+      try {
+        futures.add(_googleSignIn.signOut());
+      } catch (e) {
+        debugPrint('Error signing out from Google: $e');
+      }
+      
+      // Wait for all sign out operations to complete
+      await Future.wait(futures);
+      
+      // Force clear all authentication state
+      _user = null;
+      _isLoggedInLocally = false;
+      
+      debugPrint('Successfully signed out');
+      
     } catch (e) {
       debugPrint('Error signing out: $e');
-      rethrow;
+      // Even if there's an error, clear local state
+      _user = null;
+      _isLoggedInLocally = false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Continue without login when Firebase is not available
+  void continueWithoutLogin() {
+    if (!_hasFirebase) {
+      debugPrint('Continuing without login - Firebase not available');
+      _isLoggedInLocally = true;
+      notifyListeners();
     }
   }
 } 

@@ -1,0 +1,2 @@
+This folder contains image assets for the NASA Daily Snapshot app.
+Add your placeholder.png image here for fallback display. 

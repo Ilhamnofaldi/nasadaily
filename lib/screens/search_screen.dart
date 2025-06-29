@@ -236,6 +236,37 @@ class _SearchScreenState extends State<SearchScreen>
       );
     }
     
+    // Check if landscape mode
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Use grid for landscape on larger screens
+    if (isLandscape && screenWidth > 600) {
+      return GridView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(8),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 1.8,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+        ),
+        itemCount: results.length + (widget.apodProvider.isLoadingMoreSearchResults ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index == results.length && widget.apodProvider.isLoadingMoreSearchResults) {
+            return const Card(
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (index >= results.length) return const SizedBox.shrink();
+          
+          final apod = results[index];
+          return _buildSearchResultGridItem(apod);
+        },
+      );
+    }
+    
+    // Portrait mode - use list view
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(8),
@@ -431,6 +462,113 @@ class _SearchScreenState extends State<SearchScreen>
                 color: isFavorite ? Colors.red : null,
               ),
               onPressed: () => _toggleFavorite(apod),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchResultGridItem(ApodModel apod) {
+    final isFavorite = widget.favoritesProvider.isFavorite(apod.date);
+    
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailScreen(
+              apod: apod,
+              favoritesProvider: widget.favoritesProvider,
+              heroTagPrefix: 'search_grid_',
+            ),
+          ),
+        ),
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    child: Hero(
+                      tag: 'search_grid_apod_image_${apod.date}',
+                      child: ImprovedImageLoader(
+                        imageUrl: apod.displayUrl,
+                        mediaType: apod.mediaType,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  if (apod.mediaType == 'video')
+                    Positioned.fill(
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.7)),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                      ),
+                    ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_outline,
+                          color: isFavorite ? Colors.red : Colors.grey[600],
+                          size: 20,
+                        ),
+                        onPressed: () => _toggleFavorite(apod),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    apod.title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat.yMMMd().format(DateTime.parse(apod.date)),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),

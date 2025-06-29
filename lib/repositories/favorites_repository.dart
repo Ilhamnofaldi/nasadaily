@@ -6,8 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/apod_model.dart';
 
 class FavoritesRepository {
-  final FirebaseFirestore _firestore;
-  final FirebaseAuth _auth;
+  final FirebaseFirestore? _firestore;
+  final FirebaseAuth? _auth;
   final SharedPreferences _prefs;
   static const String _localStorageKey = 'favorites';
 
@@ -15,8 +15,8 @@ class FavoritesRepository {
     FirebaseFirestore? firestore,
     FirebaseAuth? auth,
     required SharedPreferences prefs,
-  })  : _firestore = firestore ?? FirebaseFirestore.instance,
-        _auth = auth ?? FirebaseAuth.instance,
+  })  : _firestore = firestore,
+        _auth = auth,
         _prefs = prefs;
 
   // Get favorites from local storage
@@ -41,10 +41,12 @@ class FavoritesRepository {
   // Get favorites from Firestore
   Future<List<ApodModel>> getFavoritesFromFirestore() async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return [];
+      if (_firestore == null || _auth == null) return getLocalFavorites();
+      
+      final user = _auth!.currentUser;
+      if (user == null) return getLocalFavorites();
 
-      final snapshot = await _firestore
+      final snapshot = await _firestore!
           .collection('users')
           .doc(user.uid)
           .collection('favorites')
@@ -69,12 +71,16 @@ class FavoritesRepository {
 
   // Stream favorites from Firestore
   Stream<List<ApodModel>> streamFavorites() {
-    final user = _auth.currentUser;
+    if (_firestore == null || _auth == null) {
+      return Stream.value(getLocalFavorites());
+    }
+    
+    final user = _auth!.currentUser;
     if (user == null) {
       return Stream.value(getLocalFavorites());
     }
 
-    return _firestore
+    return _firestore!
         .collection('users')
         .doc(user.uid)
         .collection('favorites')
@@ -96,46 +102,56 @@ class FavoritesRepository {
 
   // Add favorite to Firestore and local storage
   Future<void> addFavorite(ApodModel apod) async {
+    // Always update local storage first
+    final favorites = getLocalFavorites();
+    if (!favorites.any((item) => item.date == apod.date)) {
+      favorites.add(apod);
+      favorites.sort((a, b) => b.date.compareTo(a.date));
+      await saveFavoritesToLocal(favorites);
+    }
+    
+    // Try to sync with Firestore if available
     try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('favorites')
-            .doc(apod.date)
-            .set(apod.toJson());
+      if (_firestore != null && _auth != null) {
+        final user = _auth!.currentUser;
+        if (user != null) {
+          await _firestore!
+              .collection('users')
+              .doc(user.uid)
+              .collection('favorites')
+              .doc(apod.date)
+              .set(apod.toJson());
+        }
       }
     } catch (e) {
-      // If Firestore fails, at least save to local storage
-      final favorites = getLocalFavorites();
-      if (!favorites.any((item) => item.date == apod.date)) {
-        favorites.add(apod);
-        favorites.sort((a, b) => b.date.compareTo(a.date));
-        await saveFavoritesToLocal(favorites);
-      }
-      rethrow;
+      // If Firestore fails, local storage already updated
+      print('Failed to sync favorite to Firestore: $e');
     }
   }
 
   // Remove favorite from Firestore and local storage
   Future<void> removeFavorite(String date) async {
+    // Always update local storage first
+    final favorites = getLocalFavorites();
+    favorites.removeWhere((item) => item.date == date);
+    await saveFavoritesToLocal(favorites);
+    
+    // Try to sync with Firestore if available
     try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        await _firestore
-            .collection('users')
-            .doc(user.uid)
-            .collection('favorites')
-            .doc(date)
-            .delete();
+      if (_firestore != null && _auth != null) {
+        final user = _auth!.currentUser;
+        if (user != null) {
+          await _firestore!
+              .collection('users')
+              .doc(user.uid)
+              .collection('favorites')
+              .doc(date)
+              .delete();
+        }
       }
     } catch (e) {
-      // If Firestore fails, at least update local storage
-      final favorites = getLocalFavorites();
-      favorites.removeWhere((item) => item.date == date);
-      await saveFavoritesToLocal(favorites);
-      rethrow;
+      // If Firestore fails, local storage already updated
+      print('Failed to sync favorite removal to Firestore: $e');
     }
   }
 

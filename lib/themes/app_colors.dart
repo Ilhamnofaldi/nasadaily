@@ -52,6 +52,12 @@ class AppColors {
     Color(0xFF334155), // Medium space
   ];
   
+  static const List<Color> lightGradient = [
+    Color(0xFFFFFFFF), // White
+    Color(0xFFF8FAFC), // Light surface
+    Color(0xFFE2E8F0), // Light gray
+  ];
+  
   static const List<Color> cosmicGradient = [
     Color(0xFF6366F1), // Cosmic purple
     Color(0xFFA855F7), // Galaxy violet
@@ -68,6 +74,12 @@ class AppColors {
     Color(0xFFF59E0B), // Solar amber
     Color(0xFFEC4899), // Cosmic pink
     Color(0xFFF43F5E), // Stellar rose
+  ];
+  
+  static const List<Color> blueGradient = [
+    Color(0xFF1E3A8A), // Deep blue
+    Color(0xFF3B82F6), // Info blue
+    Color(0xFF06B6D4), // Stellar teal
   ];
   
   // Shimmer colors
@@ -122,11 +134,19 @@ class AppColors {
     return isDark ? shimmerDarkColors : shimmerLightColors;
   }
   
-  static LinearGradient getSpaceGradient({AlignmentGeometry? begin, AlignmentGeometry? end}) {
+  static LinearGradient getSpaceGradient({AlignmentGeometry? begin, AlignmentGeometry? end, bool isDark = true}) {
     return LinearGradient(
       begin: begin ?? Alignment.topLeft,
       end: end ?? Alignment.bottomRight,
-      colors: spaceGradient,
+      colors: isDark ? spaceGradient : lightGradient,
+    );
+  }
+  
+  static LinearGradient getBlueGradient({AlignmentGeometry? begin, AlignmentGeometry? end}) {
+    return LinearGradient(
+      begin: begin ?? Alignment.topLeft,
+      end: end ?? Alignment.bottomRight,
+      colors: blueGradient,
     );
   }
   

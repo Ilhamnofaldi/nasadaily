@@ -67,12 +67,34 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     try {
-      final bool? result = await _flutterLocalNotificationsPlugin
-          .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.requestNotificationsPermission();
+      // Request permission for Android
+      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
+          _flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>();
       
-      return result ?? true;
+      if (androidImplementation != null) {
+        final bool? granted = await androidImplementation
+            .requestNotificationsPermission();
+        return granted ?? true;
+      }
+      
+      // Request permission for iOS
+      final IOSFlutterLocalNotificationsPlugin? iosImplementation =
+          _flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+                  IOSFlutterLocalNotificationsPlugin>();
+      
+      if (iosImplementation != null) {
+        final bool? granted = await iosImplementation.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+        return granted ?? false;
+      }
+      
+      return true;
     } catch (e) {
       AppLogger.error('Failed to request notification permissions: $e');
       return false;

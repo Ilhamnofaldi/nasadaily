@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-import '../utils/color_utils.dart';
+import '../themes/app_colors.dart';
 
 class ShimmerLoading extends StatefulWidget {
   final double height;
   final double? width;
   final double borderRadius;
+  final Color? baseColor;
+  final Color? highlightColor;
+  final EdgeInsetsGeometry? margin;
 
   const ShimmerLoading({
-    Key? key,
+    super.key,
     required this.height,
     this.width,
-    this.borderRadius = 8,
-  }) : super(key: key);
+    this.borderRadius = 12,
+    this.baseColor,
+    this.highlightColor,
+    this.margin,
+  });
 
   @override
   State<ShimmerLoading> createState() => _ShimmerLoadingState();
@@ -26,7 +32,7 @@ class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProvid
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
     )..repeat();
     
     _animation = Tween<double>(begin: -2, end: 2).animate(
@@ -40,39 +46,52 @@ class _ShimmerLoadingState extends State<ShimmerLoading> with SingleTickerProvid
     super.dispose();
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Get theme-appropriate shimmer colors
+    final shimmerColors = AppColors.getShimmerColors(isDark);
+    final defaultBaseColor = widget.baseColor ?? shimmerColors[0];
+    final defaultHighlightColor = widget.highlightColor ?? shimmerColors[1];
+
+    return Container(
+      margin: widget.margin,
+      child: AnimatedBuilder(
       animation: _animation,
       builder: (context, child) {
         return Container(
           height: widget.height,
-          width: widget.width,
+            width: widget.width ?? double.infinity,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius),
             gradient: LinearGradient(
-              begin: Alignment(_animation.value, 0),
-              end: Alignment(_animation.value + 1, 0),
+                begin: Alignment(_animation.value - 1, -0.5),
+                end: Alignment(_animation.value + 1, 0.5),
               colors: [
-                Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF1A1B3A).withAlpha(ColorUtils.safeAlpha(0.3))
-                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
-                Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF6366F1).withAlpha(ColorUtils.safeAlpha(0.4))
-                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.5)),
-                Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFFA855F7).withAlpha(ColorUtils.safeAlpha(0.3))
-                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.4)),
-                Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF1A1B3A).withAlpha(ColorUtils.safeAlpha(0.2))
-                    : Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(ColorUtils.safeAlpha(0.3)),
+                  defaultBaseColor,
+                  defaultHighlightColor,
+                  AppColors.primary.withOpacity(isDark ? 0.2 : 0.1),
+                  defaultHighlightColor,
+                  defaultBaseColor,
+                ],
+                stops: const [0.0, 0.35, 0.5, 0.65, 1.0],
+              ),
+              border: Border.all(
+                color: AppColors.getBorderColor(isDark),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(isDark ? 0.05 : 0.02),
+                  blurRadius: 15,
+                  offset: const Offset(0, 4),
+                ),
               ],
-            ),
           ),
         );
       },
+      ),
     );
   }
 }

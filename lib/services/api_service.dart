@@ -72,6 +72,7 @@ class ApiService {
     final url = Uri.parse('$_baseUrl?api_key=$_apiKey&start_date=$startDate&end_date=$endDate');
     
     try {
+      if (kDebugMode) print('🔍 API Request: $url');
       final response = await http.get(url).timeout(const Duration(seconds: 45));
       
       if (response.statusCode == 200) {
@@ -96,6 +97,31 @@ class ApiService {
         return results;
       } else if (response.statusCode == 429) {
         throw Exception('Rate limit exceeded. Please try again later.');
+      } else if (response.statusCode == 400) {
+        // Handle 400 error for future dates - try with a fallback date
+        if (kDebugMode) print('🔄 Got 400 error, trying with fallback date');
+        
+        // Parse the original dates
+        DateTime start = DateTime.parse(startDate);
+        DateTime end = DateTime.parse(endDate);
+        
+        // Check if dates are in the future and adjust if needed
+        DateTime now = DateTime.now();
+        DateTime yesterday = now.subtract(const Duration(days: 1));
+        
+        if (start.isAfter(yesterday) || end.isAfter(yesterday)) {
+          // Adjust dates to use yesterday as the end date
+          end = yesterday;
+          start = end.subtract(Duration(days: end.difference(start).inDays));
+          
+          // Try again with adjusted dates
+          return getApodRange(
+            startDate: _formatDate(start),
+            endDate: _formatDate(end)
+          );
+        }
+        
+        throw Exception('Failed to load APOD range: ${response.statusCode}');
       } else {
         throw Exception('Failed to load APOD range: ${response.statusCode}');
       }

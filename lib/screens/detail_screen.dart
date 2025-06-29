@@ -8,6 +8,9 @@ import '../widgets/enhanced_image_loader.dart';
 import '../widgets/zoomable_image.dart';
 import '../utils/color_utils.dart';
 import '../utils/formatters.dart';
+import '../services/media_service.dart';
+import '../themes/app_colors.dart';
+import 'package:intl/intl.dart';
 
 class DetailScreen extends StatefulWidget {
   final ApodModel apod;
@@ -27,6 +30,7 @@ class DetailScreen extends StatefulWidget {
 
 class _DetailScreenState extends State<DetailScreen> {
   bool _isFavorite = false;
+  final MediaService _mediaService = MediaService();
 
   @override
   void initState() {
@@ -58,9 +62,46 @@ class _DetailScreenState extends State<DetailScreen> {
     }
   }
 
+  Future<void> _downloadImage() async {
+    if (widget.apod.mediaType != 'image') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Hanya gambar yang bisa diunduh'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    final success = await _mediaService.saveImageToGallery(widget.apod);
+    
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Gambar berhasil disimpan ke galeri'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } else {
+        // Check if permission is denied
+        final hasPermission = await _mediaService.hasStoragePermission();
+        if (!hasPermission) {
+          _mediaService.showPermissionDialog(context);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Gagal menyimpan gambar'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
+  }
+
   void _shareApod() {
-    final text = '${widget.apod.title}\n\n${widget.apod.explanation}\n\nImage: ${widget.apod.url}';
-    Share.share(text, subject: 'NASA Astronomy Picture of the Day');
+    _mediaService.shareApod(widget.apod, imageUrl: widget.apod.url);
   }
 
   void _openVideo(String url) async {
@@ -72,234 +113,259 @@ class _DetailScreenState extends State<DetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildSliverAppBar(),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Untuk landscape dan layar lebar, gunakan layout side-by-side
+    if (isLandscape && screenWidth > 600) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(widget.apod.title),
+          backgroundColor: Theme.of(context).colorScheme.surface,
+          foregroundColor: Theme.of(context).colorScheme.onSurface,
+          elevation: 0,
+          actions: _buildAppBarActions(),
+        ),
+        body: Row(
+          children: [
+            // Left side - Image
+            Expanded(
+              flex: 5,
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  // Date
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: Theme.of(context).primaryColor,
+                  Hero(
+                    tag: widget.heroTagPrefix != null 
+                        ? '${widget.heroTagPrefix}apod_image_${widget.apod.date}' 
+                        : 'apod_image_${widget.apod.date}',
+                    child: InkWell(
+                      onTap: () => _openFullScreenImage(context),
+                      child: Container(
+                        margin: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        Text(
-                          Formatters.formatDisplayDate(DateTime.parse(widget.apod.date)),
-                          style: TextStyle(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: EnhancedImageLoader(
+                            imageUrl: widget.apod.displayUrl,
+                            mediaType: widget.apod.mediaType,
+                            title: widget.apod.title,
+                            fit: BoxFit.contain,
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+                  // Video play button overlay
+                  if (widget.apod.mediaType == 'video')
+                    Positioned.fill(
+                      child: Container(
+                        margin: const EdgeInsets.all(16),
+                        child: Center(
+                          child: GestureDetector(
+                            onTap: () => _openVideo(widget.apod.url),
+                            child: Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
+                                    blurRadius: 25,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.play_arrow,
+                                color: Colors.white,
+                                size: 56,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Right side - Content
+            Expanded(
+              flex: 3,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.apod.title,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.getTextColor(isDark),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Metadata section (date & copyright) - vertical layout
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Date row
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              DateFormat.yMMMMd().format(DateTime.parse(widget.apod.date)),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        // Copyright row - only if copyright exists
+                        if (widget.apod.copyright != null && widget.apod.copyright!.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: _buildCopyrightInfo(widget.apod.copyright!, isDark),
+                          ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Title
-                  Text(
-                    widget.apod.title,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                                  // Copyright info
-                  if (widget.apod.copyright != null) ...[
+                    const SizedBox(height: 24),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.red.withOpacity(0.3),
-                          width: 1,
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                            blurRadius: 15,
+                            offset: const Offset(0, 5),
+                          ),
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                          ],
+                          stops: const [0.0, 1.0],
                         ),
                       ),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(
-                            Icons.copyright,
-                            size: 16,
-                            color: Colors.red[700],
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              widget.apod.copyright!,
-                              style: TextStyle(
-                                color: Colors.red[700],
-                                fontWeight: FontWeight.w500,
-                                fontSize: 14,
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.description,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
                               ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Description',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.getTextColor(isDark),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.apod.explanation,
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.5,
+                              color: AppColors.getTextColor(isDark),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
                   ],
-                  
-                  // Description section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        width: 1,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).shadowColor.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.description,
-                                color: Theme.of(context).primaryColor,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Description',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).primaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.apod.explanation,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                            height: 1.6,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Media info
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.secondaryContainer.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          widget.apod.mediaType == 'video' ? Icons.videocam : Icons.image,
-                          color: Theme.of(context).colorScheme.onSecondaryContainer,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Media Type: ${widget.apod.mediaType.toUpperCase()}',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
+      );
+    }
+    
+    // Untuk portrait atau layar kecil, gunakan layout vertikal
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.apod.title),
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        elevation: 0,
+        actions: _buildAppBarActions(),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _shareApod(),
-        tooltip: 'Share',
-        child: const Icon(Icons.share),
-      ),
-    );
-  }
-
-  Widget _buildSliverAppBar() {
-    return SliverAppBar(
-      expandedHeight: MediaQuery.of(context).size.height * 0.4,
-      floating: false,
-      pinned: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      foregroundColor: Theme.of(context).colorScheme.onSurface,
-      elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top + kToolbarHeight,
-          ),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Hero(
-                tag: widget.heroTagPrefix != null 
-                    ? '${widget.heroTagPrefix}apod_image_${widget.apod.date}' 
-                    : 'apod_image_${widget.apod.date}',
-                child: InkWell(
-                  onTap: () => _openFullScreenImage(context),
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Hero image with improved design
+            Stack(
+              children: [
+                Hero(
+                  tag: widget.heroTagPrefix != null 
+                      ? '${widget.heroTagPrefix}apod_image_${widget.apod.date}' 
+                      : 'apod_image_${widget.apod.date}',
+                  child: InkWell(
+                    onTap: () => _openFullScreenImage(context),
+                    child: Container(
+                      height: MediaQuery.of(context).size.height * 0.4,
+                      decoration: BoxDecoration(
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
                       child: EnhancedImageLoader(
                         imageUrl: widget.apod.displayUrl,
                         mediaType: widget.apod.mediaType,
@@ -309,46 +375,20 @@ class _DetailScreenState extends State<DetailScreen> {
                     ),
                   ),
                 ),
-              ),
-              // Gradient overlay for better readability
-              Positioned(
-                left: 16,
-                right: 16,
-                top: 0,
-                bottom: 0,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.black.withAlpha(ColorUtils.safeAlpha(0.2)),
-                        Colors.transparent,
-                        Colors.transparent,
-                        Colors.black.withAlpha(ColorUtils.safeAlpha(0.5)),
-                      ],
-                      stops: const [0.0, 0.3, 0.7, 1.0],
-                    ),
-                  ),
-                ),
-              ),
-              // Video play button overlay
-              if (widget.apod.mediaType == 'video')
-                Positioned.fill(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                // Video play button overlay
+                if (widget.apod.mediaType == 'video')
+                  Positioned.fill(
                     child: Center(
                       child: GestureDetector(
                         onTap: () => _openVideo(widget.apod.url),
                         child: Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.95)),
+                            color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.6)),
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.4)),
+                                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.3)),
                                 blurRadius: 25,
                                 offset: const Offset(0, 10),
                               ),
@@ -356,98 +396,220 @@ class _DetailScreenState extends State<DetailScreen> {
                           ),
                           child: Icon(
                             Icons.play_arrow,
-                            color: Theme.of(context).primaryColor,
+                            color: Colors.white,
                             size: 56,
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
+              ],
+            ),
+            // Content with improved design
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.apod.title,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.getTextColor(isDark),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  // Metadata section (date & copyright) - vertical layout
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Date row
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: 18,
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            DateFormat.yMMMMd().format(DateTime.parse(widget.apod.date)),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                      
+                      // Copyright row - only if copyright exists
+                      if (widget.apod.copyright != null && widget.apod.copyright!.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: _buildCopyrightInfo(widget.apod.copyright!, isDark),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                          Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                        ],
+                        stops: const [0.0, 1.0],
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.description,
+                                color: Theme.of(context).colorScheme.primary,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Description',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.getTextColor(isDark),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          widget.apod.explanation,
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: AppColors.getTextColor(isDark),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.2)),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(
-              _isFavorite ? Icons.favorite : Icons.favorite_outline,
-              color: _isFavorite ? Colors.red : Colors.grey[600],
-              size: 24,
-            ),
-            onPressed: _toggleFavorite,
-            tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 8),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.2)),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(
-              Icons.download,
-              color: Colors.grey[600],
-              size: 24,
-            ),
-            onPressed: () {
-              // Download image
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Image saved to gallery'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            tooltip: 'Download',
-          ),
-        ),
-        Container(
-          margin: const EdgeInsets.only(right: 16),
-          decoration: BoxDecoration(
-            color: Colors.white.withAlpha(ColorUtils.safeAlpha(0.9)),
-            borderRadius: BorderRadius.circular(25),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(ColorUtils.safeAlpha(0.2)),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            icon: Icon(
-              Icons.share,
-              color: Colors.grey[600],
-              size: 24,
-            ),
-            onPressed: () => _shareApod(),
-            tooltip: 'Share',
-          ),
-        ),
-      ],
     );
+  }
+
+  List<Widget> _buildAppBarActions() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return [
+      Container(
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceColor(isDark).withAlpha(ColorUtils.safeAlpha(0.9)),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowMedium,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: IconButton(
+          icon: Icon(
+            _isFavorite ? Icons.favorite : Icons.favorite_outline,
+            color: _isFavorite ? AppColors.error : AppColors.getSecondaryTextColor(isDark),
+            size: 24,
+          ),
+          onPressed: _toggleFavorite,
+          tooltip: _isFavorite ? 'Remove from favorites' : 'Add to favorites',
+        ),
+      ),
+      Container(
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceColor(isDark).withAlpha(ColorUtils.safeAlpha(0.9)),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowMedium,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: IconButton(
+          icon: Icon(
+            Icons.download,
+            color: AppColors.getSecondaryTextColor(isDark),
+            size: 24,
+          ),
+          onPressed: _downloadImage,
+          tooltip: 'Download',
+        ),
+      ),
+      Container(
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: AppColors.getSurfaceColor(isDark).withAlpha(ColorUtils.safeAlpha(0.9)),
+          borderRadius: BorderRadius.circular(25),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadowMedium,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: IconButton(
+          icon: Icon(
+            Icons.share,
+            color: AppColors.getSecondaryTextColor(isDark),
+            size: 24,
+          ),
+          onPressed: () => _shareApod(),
+          tooltip: 'Share',
+        ),
+      ),
+    ];
   }
 
   void _openFullScreenImage(BuildContext context) {
@@ -462,5 +624,38 @@ class _DetailScreenState extends State<DetailScreen> {
         ),
       );
     }
+  }
+
+  // Custom widget untuk menampilkan copyright dengan cara yang pasti bekerja
+  Widget _buildCopyrightInfo(String copyright, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.copyright,
+            size: 16,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              copyright,
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
