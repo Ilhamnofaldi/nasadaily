@@ -66,7 +66,7 @@ lib/
 
 ### ⚙️ **Settings/Profile Screen** 
 - **Theme Management**: Dark/Light mode toggle
-- **User Authentication**: Login sistem (saat ini offline mode)
+- **User Authentication**: Login sistem menggunakan email/google sign in
 - **Notification Settings**: Pengaturan notifikasi harian
 - **Cache Management**: Pengelolaan cache gambar
 - **About Information**: Info aplikasi dan developer
