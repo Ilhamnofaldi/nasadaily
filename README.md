@@ -11,10 +11,8 @@ A beautiful Flutter application that displays NASA's Astronomy Picture of the Da
 - **Dark/Light Theme**: Beautiful space-themed UI with theme switching
 - **Offline Support**: Cached images for offline viewing
 - **Image Zoom**: Pinch to zoom on high-resolution images
-- **Video Support**: Play APOD videos directly in the app
 - **Share**: Share amazing space content with friends
 
-## Screenshots 📱
 
 *Screenshots will be added here*
 
