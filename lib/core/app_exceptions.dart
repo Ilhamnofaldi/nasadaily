@@ -291,6 +291,85 @@ class VideoException extends AppException {
   }
 }
 
+/// Auth related exceptions
+class AuthException extends AppException {
+  const AuthException({
+    required String message,
+    String? code,
+    dynamic originalError,
+    StackTrace? stackTrace,
+  }) : super(
+    message: message,
+    code: code,
+    originalError: originalError,
+    stackTrace: stackTrace,
+  );
+  
+  factory AuthException.notAuthenticated() {
+    return const AuthException(
+      message: 'User not authenticated',
+      code: 'NOT_AUTHENTICATED',
+    );
+  }
+  
+  factory AuthException.insufficientPermissions() {
+    return const AuthException(
+      message: 'Insufficient permissions',
+      code: 'INSUFFICIENT_PERMISSIONS',
+    );
+  }
+  
+  factory AuthException.tokenExpired() {
+    return const AuthException(
+      message: 'Authentication token expired',
+      code: 'TOKEN_EXPIRED',
+    );
+  }
+}
+
+/// Database related exceptions
+class DatabaseException extends AppException {
+  const DatabaseException({
+    required String message,
+    String? code,
+    dynamic originalError,
+    StackTrace? stackTrace,
+  }) : super(
+    message: message,
+    code: code,
+    originalError: originalError,
+    stackTrace: stackTrace,
+  );
+  
+  factory DatabaseException.operationFailed(String operation) {
+    return DatabaseException(
+      message: 'Database operation failed: $operation',
+      code: 'OPERATION_FAILED',
+    );
+  }
+  
+  factory DatabaseException.connectionError() {
+    return const DatabaseException(
+      message: 'Failed to connect to database',
+      code: 'CONNECTION_ERROR',
+    );
+  }
+  
+  factory DatabaseException.documentNotFound(String documentId) {
+    return DatabaseException(
+      message: 'Document not found: $documentId',
+      code: 'DOCUMENT_NOT_FOUND',
+    );
+  }
+  
+  factory DatabaseException.permissionDenied() {
+    return const DatabaseException(
+      message: 'Database permission denied',
+      code: 'PERMISSION_DENIED',
+    );
+  }
+}
+
 /// Unknown or unexpected exceptions
 class UnknownException extends AppException {
   const UnknownException({

@@ -6,3 +6,4 @@ export 'login_screen.dart';
 export 'main_screen.dart';
 export 'search_screen.dart';
 export 'settings_screen.dart';
+export 'catatan_screen.dart';

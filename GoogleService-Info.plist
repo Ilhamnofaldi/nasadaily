@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1051259865595-oqiah2og5j6u6cq1ftbcggo43ci4dk9l.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1051259865595-oqiah2og5j6u6cq1ftbcggo43ci4dk9l</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>1051259865595-escpl96p38813262f90o75bsv83v7un9.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDMctU9Pvo2Syn0pePJuWVgJnZuf9Kwz_s</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1051259865595</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.nasaDailySnapshot</string>
+	<key>PROJECT_ID</key>
+	<string>nasasnapshots</string>
+	<key>STORAGE_BUCKET</key>
+	<string>nasasnapshots.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1051259865595:ios:f563d84517ada45490a35e</string>
+</dict>
+</plist>

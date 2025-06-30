@@ -1,0 +1,15 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "catatan",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "created_at",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+} 

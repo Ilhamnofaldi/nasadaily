@@ -45,7 +45,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _pageController = PageController(initialPage: _selectedIndex);
     
     // Initialize navigation item animations
-    _navItemAnimations = List.generate(4, (index) {
+    _navItemAnimations = List.generate(5, (index) {
       return Tween<double>(
         begin: 0.0,
         end: 1.0,
@@ -60,6 +60,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     });
     
     _navAnimationController.forward();
+    
+    // Initialize CatatanProvider when MainScreen is created
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final catatanProvider = Provider.of<CatatanProvider>(context, listen: false);
+      catatanProvider.initialize();
+    });
   }
 
   @override
@@ -207,7 +213,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
                   const SizedBox(height: 8),
                   _buildModernNavItem(
-                  index: 3,
+                    index: 3,
+                    icon: Icons.note_outlined,
+                    selectedIcon: Icons.note_rounded,
+                    label: 'Catatan',
+                  ),
+                  const SizedBox(height: 8),
+                  _buildModernNavItem(
+                  index: 4,
                     icon: Icons.person_outline_rounded,
                     selectedIcon: Icons.person_rounded,
                     label: 'Profile',
@@ -339,6 +352,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
               _buildModernBottomNavItem(
                 index: 3,
+                icon: Icons.note_outlined,
+                selectedIcon: Icons.note_rounded,
+                label: 'Catatan',
+              ),
+              _buildModernBottomNavItem(
+                index: 4,
                 icon: Icons.person_outline_rounded,
                 selectedIcon: Icons.person_rounded,
                 label: 'Profile',
@@ -489,6 +508,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   const SizedBox(height: 12),
                   _buildCompactNavItem(
                     index: 3,
+                    icon: Icons.note_outlined,
+                    selectedIcon: Icons.note_rounded,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildCompactNavItem(
+                    index: 4,
                     icon: Icons.person_outline_rounded,
                     selectedIcon: Icons.person_rounded,
                   ),
@@ -597,6 +622,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         favoritesProvider: widget.favoritesProvider,
         apodProvider: widget.apodProvider,
       ),
+      const CatatanScreen(),
       SettingsScreen(
         themeProvider: widget.themeProvider,
       ),

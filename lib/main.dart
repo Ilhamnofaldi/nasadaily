@@ -64,6 +64,10 @@ void main() async {
   // await apodProvider.initialize(); 
 
   final authProvider = AuthProvider();
+  final catatanProvider = CatatanProvider();
+  
+  // Initialize catatan provider when needed
+  // Note: CatatanProvider will be initialized when user is authenticated
   
   runApp(
     MultiProvider(
@@ -72,6 +76,7 @@ void main() async {
         ChangeNotifierProvider.value(value: favoritesProvider),
         ChangeNotifierProvider.value(value: apodProvider),
         ChangeNotifierProvider.value(value: authProvider),
+        ChangeNotifierProvider.value(value: catatanProvider),
       ],
       child: const MyApp(),
     ),

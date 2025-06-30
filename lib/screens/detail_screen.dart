@@ -3,7 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/apod_model.dart';
+import '../models/catatan_model.dart';
 import '../providers/favorites_provider.dart';
+import '../providers/catatan_provider.dart';
 import '../widgets/enhanced_image_loader.dart';
 import '../widgets/zoomable_image.dart';
 import '../utils/color_utils.dart';
@@ -31,11 +33,21 @@ class DetailScreen extends StatefulWidget {
 class _DetailScreenState extends State<DetailScreen> {
   bool _isFavorite = false;
   final MediaService _mediaService = MediaService();
+  CatatanModel? _existingCatatan;
+  final TextEditingController _catatanController = TextEditingController();
+  bool _isEditingCatatan = false;
 
   @override
   void initState() {
     super.initState();
     _checkFavoriteStatus();
+    _loadExistingCatatan();
+  }
+
+  @override
+  void dispose() {
+    _catatanController.dispose();
+    super.dispose();
   }
 
   void _checkFavoriteStatus() {
@@ -45,10 +57,174 @@ class _DetailScreenState extends State<DetailScreen> {
     });
   }
 
+  Future<void> _loadExistingCatatan() async {
+    final catatanProvider = Provider.of<CatatanProvider>(context, listen: false);
+    final catatan = catatanProvider.getCatatanByApodDate(widget.apod.date);
+    setState(() {
+      _existingCatatan = catatan;
+      if (catatan != null) {
+        _catatanController.text = catatan.catatan;
+      }
+    });
+  }
+
+  Future<void> _saveCatatan() async {
+    final catatan = _catatanController.text.trim();
+    if (catatan.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Catatan tidak boleh kosong'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    final catatanProvider = Provider.of<CatatanProvider>(context, listen: false);
+    bool success = false;
+
+    if (_existingCatatan != null) {
+      // Update existing catatan
+      success = await catatanProvider.updateCatatan(
+        catatanId: _existingCatatan!.id,
+        catatan: catatan,
+      );
+    } else {
+      // Add new catatan
+      success = await catatanProvider.addCatatan(
+        apod: widget.apod,
+        catatan: catatan,
+      );
+    }
+
+    if (success) {
+      setState(() {
+        _isEditingCatatan = false;
+      });
+      await _loadExistingCatatan();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_existingCatatan != null ? 'Catatan berhasil diperbarui' : 'Catatan berhasil ditambahkan'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(catatanProvider.error ?? 'Gagal menyimpan catatan'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _startEditingCatatan() {
+    // Check if APOD is favorited before allowing to add/edit note
+    if (!_isFavorite && _existingCatatan == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Row(
+            children: [
+              Icon(Icons.favorite, color: Colors.white),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text('Favoritkan foto ini terlebih dahulu untuk menambahkan catatan'),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange[700],
+          action: SnackBarAction(
+            label: 'Favoritkan',
+            textColor: Colors.white,
+            onPressed: () async {
+              await _toggleFavorite();
+              // After favoriting, check status and allow editing
+              if (_isFavorite) {
+                setState(() {
+                  _isEditingCatatan = true;
+                });
+              }
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isEditingCatatan = true;
+      if (_existingCatatan != null) {
+        _catatanController.text = _existingCatatan!.catatan;
+      }
+    });
+  }
+
+  void _cancelEditingCatatan() {
+    setState(() {
+      _isEditingCatatan = false;
+      if (_existingCatatan != null) {
+        _catatanController.text = _existingCatatan!.catatan;
+      } else {
+        _catatanController.clear();
+      }
+    });
+  }
+
+  Future<void> _deleteCatatan() async {
+    if (_existingCatatan == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Catatan'),
+        content: const Text('Apakah Anda yakin ingin menghapus catatan ini?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final catatanProvider = Provider.of<CatatanProvider>(context, listen: false);
+      final success = await catatanProvider.deleteCatatan(_existingCatatan!.id);
+      
+      if (success) {
+        setState(() {
+          _existingCatatan = null;
+          _catatanController.clear();
+          _isEditingCatatan = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Catatan berhasil dihapus'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(catatanProvider.error ?? 'Gagal menghapus catatan'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _toggleFavorite() async {
     try {
       if (widget.favoritesProvider != null) {
         await widget.favoritesProvider!.toggleFavorite(widget.apod);
+        // Update local state after toggling
+        _checkFavoriteStatus();
       }
     } catch (e) {
       if (mounted) {
@@ -324,6 +500,8 @@ class _DetailScreenState extends State<DetailScreen> {
                         ],
                       ),
                     ),
+                    // Catatan section
+                    _buildCatatanSection(isDark),
                   ],
                 ),
               ),
@@ -528,6 +706,8 @@ class _DetailScreenState extends State<DetailScreen> {
                       ],
                     ),
                   ),
+                  // Catatan section
+                  _buildCatatanSection(isDark),
                 ],
               ),
             ),
@@ -654,6 +834,225 @@ class _DetailScreenState extends State<DetailScreen> {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // Widget untuk section catatan
+  Widget _buildCatatanSection(bool isDark) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withOpacity(0.2),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withOpacity(0.1),
+            AppColors.secondaryPink.withOpacity(0.1),
+          ],
+          stops: const [0.0, 1.0],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.primary.withOpacity(0.5),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  Icons.note_add,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Catatan Pribadi',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.getTextColor(isDark),
+                  ),
+                ),
+              ),
+              if (_existingCatatan != null && !_isEditingCatatan) ...[
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: _startEditingCatatan,
+                  tooltip: 'Edit catatan',
+                  color: AppColors.primary,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 20),
+                  onPressed: _deleteCatatan,
+                  tooltip: 'Hapus catatan',
+                  color: Colors.red,
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Content
+          if (_isEditingCatatan) ...[
+            // Edit mode
+            TextField(
+              controller: _catatanController,
+              maxLines: 4,
+              style: const TextStyle(color: Colors.black87),
+              decoration: InputDecoration(
+                hintText: 'Tulis catatan Anda tentang foto NASA ini...',
+                hintStyle: TextStyle(color: Colors.grey[600]),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.grey[300]!, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.all(12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: _cancelEditingCatatan,
+                  child: const Text('Batal'),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _saveCatatan,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Simpan'),
+                ),
+              ],
+            ),
+          ] else if (_existingCatatan != null) ...[
+            // Display mode with existing note
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Text(
+                _existingCatatan!.catatan,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.5,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Dibuat: ${_existingCatatan!.formattedCreatedAt}',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ] else ...[
+            // No note yet
+            Column(
+              children: [
+                Icon(
+                  _isFavorite ? Icons.note_add_outlined : Icons.favorite_border,
+                  size: 48,
+                  color: _isFavorite ? Colors.grey[400] : Colors.orange[300],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _isFavorite 
+                    ? 'Belum ada catatan untuk foto ini'
+                    : 'Favoritkan foto ini untuk menambahkan catatan',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                if (_isFavorite) ...[
+                  ElevatedButton.icon(
+                    onPressed: _startEditingCatatan,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Tambah Catatan'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ] else ...[
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await _toggleFavorite();
+                      if (_isFavorite) {
+                        setState(() {
+                          _isEditingCatatan = true;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.favorite),
+                    label: const Text('Favoritkan Dulu'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange[700],
+                      side: BorderSide(color: Colors.orange[300]!),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
         ],
       ),
     );

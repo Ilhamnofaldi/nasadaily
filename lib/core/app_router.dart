@@ -4,6 +4,7 @@ import '../screens/detail_screen.dart';
 import '../screens/favorites_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/catatan_screen.dart';
 import '../models/apod_model.dart';
 import '../providers/apod_provider.dart';
 import '../providers/favorites_provider.dart';
@@ -15,6 +16,7 @@ class AppRoutes {
   static const String detail = '/detail';
   static const String favorites = '/favorites';
   static const String search = '/search';
+  static const String catatan = '/catatan';
   static const String settings = '/settings';
   
   /// Get all route names
@@ -23,6 +25,7 @@ class AppRoutes {
     detail,
     favorites,
     search,
+    catatan,
     settings,
   ];
 }
@@ -139,6 +142,13 @@ class AppRouter {
           ),
           settings,
           RouteTransition.slideFromTop,
+        );
+        
+      case AppRoutes.catatan:
+        return _buildRoute(
+          const CatatanScreen(),
+          settings,
+          RouteTransition.slideFromBottom,
         );
         
       case AppRoutes.settings:
@@ -449,6 +459,10 @@ class AppRouter {
         if (searchType != null) RouteArguments.searchType: searchType,
       },
     );
+  }
+
+  static Future<void> goToCatatan(BuildContext context) {
+    return pushNamed(context, AppRoutes.catatan);
   }
 
   static Future<void> goToSettings(BuildContext context) {
