@@ -664,7 +664,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                         ),
                       ),
                       
-                      SizedBox(height: isPortrait ? 120 : 40), // Extra space for bottom nav in portrait
+                      SizedBox(height: isPortrait ? 100 : 40), // Extra space for bottom nav in portrait
                     ],
                     ),
                 ),

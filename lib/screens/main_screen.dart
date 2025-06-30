@@ -299,7 +299,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Container(
-      height: 90,
+      height: 80,
       decoration: BoxDecoration(
         gradient: isDark 
           ? LinearGradient(
@@ -327,43 +327,50 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         ],
       ),
       child: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-              _buildModernBottomNavItem(
-            index: 0,
-            icon: Icons.home_outlined,
-            selectedIcon: Icons.home_rounded,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Expanded(
+              child: _buildModernBottomNavItem(
+                index: 0,
+                icon: Icons.home_outlined,
+                selectedIcon: Icons.home_rounded,
                 label: 'Home',
-          ),
-              _buildModernBottomNavItem(
-            index: 1,
-            icon: Icons.search_outlined,
-            selectedIcon: Icons.search_rounded,
+              ),
+            ),
+            Expanded(
+              child: _buildModernBottomNavItem(
+                index: 1,
+                icon: Icons.search_outlined,
+                selectedIcon: Icons.search_rounded,
                 label: 'Search',
-          ),
-              _buildModernBottomNavItem(
-            index: 2,
-            icon: Icons.favorite_outline_rounded,
-            selectedIcon: Icons.favorite_rounded,
+              ),
+            ),
+            Expanded(
+              child: _buildModernBottomNavItem(
+                index: 2,
+                icon: Icons.favorite_outline_rounded,
+                selectedIcon: Icons.favorite_rounded,
                 label: 'Favourites',
               ),
-              _buildModernBottomNavItem(
+            ),
+            Expanded(
+              child: _buildModernBottomNavItem(
                 index: 3,
                 icon: Icons.note_outlined,
                 selectedIcon: Icons.note_rounded,
                 label: 'Catatan',
               ),
-              _buildModernBottomNavItem(
+            ),
+            Expanded(
+              child: _buildModernBottomNavItem(
                 index: 4,
                 icon: Icons.person_outline_rounded,
                 selectedIcon: Icons.person_rounded,
                 label: 'Profile',
-          ),
-            ],
-          ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -386,12 +393,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           child: GestureDetector(
             onTap: () => _onItemTapped(index),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 color: isSelected 
                   ? AppColors.primary.withOpacity(0.15)
                   : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
                 border: isSelected
                   ? Border.all(
                       color: AppColors.primary.withOpacity(0.3),
@@ -401,25 +408,29 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     isSelected ? selectedIcon : icon,
                     color: isSelected 
                       ? AppColors.primary 
                       : AppColors.getSecondaryTextColor(isDark),
-                    size: 24,
+                    size: 22,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Text(
                     label,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: 9,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                       color: isSelected 
                         ? AppColors.primary 
                         : AppColors.getSecondaryTextColor(isDark),
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.2,
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -665,7 +676,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     // Use bottom navigation for small screens
     return Scaffold(
-      extendBody: true,
+      extendBody: false, // Changed to false to prevent content from extending under bottom nav
       backgroundColor: isDark ? AppColors.getBackgroundColor(isDark) : Colors.white,
       body: Container(
         decoration: BoxDecoration(

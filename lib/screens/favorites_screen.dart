@@ -116,7 +116,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with AutomaticKeepAli
     }
     
     return GridView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 100), // Added bottom padding for bottom nav
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         childAspectRatio: childAspectRatio,

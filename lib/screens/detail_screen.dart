@@ -379,7 +379,7 @@ class _DetailScreenState extends State<DetailScreen> {
             Expanded(
               flex: 3,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 100.0), // Added bottom padding for bottom nav
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

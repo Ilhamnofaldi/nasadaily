@@ -377,7 +377,7 @@ class _CatatanScreenState extends State<CatatanScreen> {
                   onRefresh: _onRefresh,
                   child: ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added bottom padding for bottom nav
                     itemCount: _filteredCatatan.length,
                     itemBuilder: (context, index) {
                       final catatan = _filteredCatatan[index];
@@ -389,16 +389,6 @@ class _CatatanScreenState extends State<CatatanScreen> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Navigate to home screen to add new note
-          Navigator.of(context).pushNamed('/home');
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Tambah Catatan'),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
       ),
     );
   }

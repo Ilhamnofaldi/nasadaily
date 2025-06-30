@@ -269,7 +269,7 @@ class _SearchScreenState extends State<SearchScreen>
     // Portrait mode - use list view
     return ListView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 100), // Added bottom padding for bottom nav
       itemCount: results.length + (widget.apodProvider.isLoadingMoreSearchResults ? 1 : 0),
       itemBuilder: (context, index) {
         if (index == results.length && widget.apodProvider.isLoadingMoreSearchResults) {
@@ -289,7 +289,7 @@ class _SearchScreenState extends State<SearchScreen>
   Widget _buildInitialView() {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0), // Added padding for better spacing
+        padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 100.0), // Added bottom padding for bottom nav
         child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -329,7 +329,7 @@ class _SearchScreenState extends State<SearchScreen>
   
   Widget _buildLoadingView() {
     return ListView.builder(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.fromLTRB(8, 8, 8, 100), // Added bottom padding for bottom nav
       itemCount: 5,
       itemBuilder: (context, index) {
         return Card(
